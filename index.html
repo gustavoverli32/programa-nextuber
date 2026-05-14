@@ -830,6 +830,34 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div id="pTrilha"></div>
     </div>
     <div class="psec">
+      <div class="psec-ttl">Desempenho — Meta do mês</div>
+      <div style="background:var(--bg);border-radius:var(--r2);padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="font-size:12px;color:var(--ink3);">Pontuação atual</span>
+          <span id="pScore" style="font-size:22px;font-weight:700;color:var(--or);">—</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px;">
+          <div id="pScoreBar" style="height:100%;border-radius:3px;background:var(--or);width:0%;transition:width .5s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:3px;"><span>0</span><span>10</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-grp">
+          <div class="field-lbl">Meta — tutora</div>
+          <input class="field-in" type="text" id="pMeta" placeholder="Ex: 10000" inputmode="numeric" disabled style="font-size:14px;">
+        </div>
+        <div class="field-grp">
+          <div class="field-lbl">Resultado — estagiário</div>
+          <input class="field-in" type="text" id="pResultado" placeholder="Ex: 8500" inputmode="numeric" disabled style="font-size:14px;background:var(--or-f);">
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;margin-top:10px;">
+        <button class="btn-obs" id="btnSaveMeta" disabled>Salvar meta</button>
+        <span class="obs-saved" id="metaSaved">✓ Salvo</span>
+      </div>
+    </div>
+
+    <div class="psec">
       <div class="psec-ttl">Marcação de atenção</div>
       <button class="btn-atencao" id="btnAtencao" disabled>
         <span>⚠</span><span id="btnAtencaoTxt">Marcar como atenção</span>
@@ -965,7 +993,9 @@ function mkEstObj(row){
     obs:          row.obs || '',
     atencao:      row.atencao || false,
     perfil:       row.perfil || {idade:'',funcional:'',inicio:''},
-    trilhaChecks: row.trilha_checks || {}
+    trilhaChecks: row.trilha_checks || {},
+    meta:         (row.perfil && row.perfil.meta) ? row.perfil.meta : '',
+    resultado:    (row.perfil && row.perfil.resultado) ? row.perfil.resultado : ''
   };
 }
 
@@ -984,14 +1014,14 @@ async function loadFromDB(){
       return {id:c.id, titulo:c.titulo, trilha:c.trilha, desc:c.descricao||'', imgs:c.imgs||[]};
     });
 
-    // Load timeline
-    var r3 = await sb.from('configuracoes').select('*').eq('id','timeline').single();
-    if(r3.data) S.tl = r3.data.valor;
+    // Load timeline — use maybeSingle to avoid error when row doesn't exist
+    var r3 = await sb.from('configuracoes').select('*').eq('id','timeline').maybeSingle();
+    if(r3.data && r3.data.valor) S.tl = r3.data.valor;
 
     DB_LOADED = true;
   } catch(e) {
-    console.error('Erro ao carregar dados:', e);
-    showToast('Erro ao conectar. Tente recarregar.', true);
+    console.error('Erro ao carregar dados:', e.message || e);
+    // Still render the page even if DB fails
   }
   showLoading(false);
   updateMetrics(); renderCiclos(); renderCards(); renderTrilha();
@@ -1355,6 +1385,42 @@ function renderTimeline(){
 }
 
 
+
+function calcScore(e){
+  var score = 0;
+  // 5 pts from trilha checklist
+  var trilhaKey = e.perfil && e.perfil.inicio ? getTrilhaKey(e.perfil.inicio) : null;
+  if(trilhaKey && TRILHAS[trilhaKey]){
+    var t = TRILHAS[trilhaKey];
+    var totalChecks = 0, doneChecks = 0;
+    t.topicos.forEach(function(tp, ti){
+      var ck = trilhaKey+'_'+ti;
+      var checks = (e.trilhaChecks && e.trilhaChecks[ck]) || Array(tp.checks.length).fill(false);
+      totalChecks += tp.checks.length;
+      doneChecks += checks.filter(Boolean).length;
+    });
+    if(totalChecks > 0) score += (doneChecks / totalChecks) * 5;
+  }
+  // 5 pts from meta atingida
+  var meta   = parseFloat((e.meta||'').toString().replace(/[^0-9.,]/g,'').replace(',','.'));
+  var result = parseFloat((e.resultado||'').toString().replace(/[^0-9.,]/g,'').replace(',','.'));
+  if(meta > 0 && result > 0){
+    score += Math.min(result / meta, 1) * 5;
+  }
+  return Math.min(Math.round(score * 10) / 10, 10); // 1 decimal, max 10
+}
+
+function scoreColor(s){
+  if(s >= 8) return '#16A34A';
+  if(s >= 5) return '#EC7000';
+  return '#DC2626';
+}
+function scoreBg(s){
+  if(s >= 8) return '#DCFCE7';
+  if(s >= 5) return '#FFF3E8';
+  return '#FEE2E2';
+}
+
 function getTrilhaKey(inicio){
   if(!inicio) return null;
   var s=new Date(inicio), now=new Date();
@@ -1456,6 +1522,7 @@ function renderCards(){
     var done=e.meses.filter(function(s){return s.indexOf('Concluído')>=0||s.indexOf('Renovado')>=0;}).length;
     var hasFn=e.perfil&&e.perfil.funcional;
     var t=e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null;
+    var score=calcScore(e);
     var dots=e.meses.map(function(s,i){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
@@ -1468,7 +1535,7 @@ function renderCards(){
         +(!hasFn&&!t?'<span class="nc-chip empty">Perfil não cadastrado</span>':'')
         +(e.atencao?'<span class="nc-atencao"><span class="nc-atencao-dot"></span>Atenção</span>':'')
       +'</div>'
-      +'<div class="nc-bottom"><div class="nc-dots">'+dots+'</div><span class="nc-count">'+done+'/6 meses</span></div>'
+      +'<div class="nc-bottom"><div class="nc-dots">'+dots+'</div>'      +'<div style="display:flex;align-items:center;gap:8px;">'        +(score>0?'<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+scoreBg(score)+';color:'+scoreColor(score)+';">'+score+'/10</span>':'')        +'<span class="nc-count">'+done+'/6</span>'      +'</div>'      +'</div>'
       +'</div>';
   }).join('');
   document.getElementById('notionGrid').innerHTML='<div class="notion-grid">'+cards+'</div>';
@@ -1491,6 +1558,19 @@ function openPanel(idx){
   document.getElementById('pTempo').textContent=(e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null)||'—';
   renderPanelTrilha(idx);
   updateAtencaoBtn(idx);
+  // Meta & score
+  var sc = calcScore(e);
+  var pScore = document.getElementById('pScore');
+  var pBar   = document.getElementById('pScoreBar');
+  if(pScore){ pScore.textContent = sc+'/10'; pScore.style.color = scoreColor(sc); }
+  if(pBar)  { pBar.style.width = (sc*10)+'%'; pBar.style.background = scoreColor(sc); }
+  var pMeta = document.getElementById('pMeta');
+  var pRes  = document.getElementById('pResultado');
+  if(pMeta){ pMeta.value = e.meta||''; pMeta.disabled = !editor; }
+  if(pRes) { pRes.value  = e.resultado||''; pRes.disabled = false; } // estagiário pode preencher futuramente
+  var btnMeta = document.getElementById('btnSaveMeta');
+  if(btnMeta) btnMeta.disabled = !editor;
+  document.getElementById('metaSaved').classList.remove('show');
   document.getElementById('obsTA').value=e.obs||'';
   document.getElementById('obsTA').disabled=!editor;
   document.getElementById('btnObs').disabled=!editor;
@@ -1716,6 +1796,10 @@ function applyMode(){
     document.getElementById('obsHint').textContent=editor?'Salvo localmente no navegador.':'Entre como tutora para editar.';
     renderPanelTrilha(panelIdx);
     updateAtencaoBtn(panelIdx);
+    var pMeta2 = document.getElementById('pMeta');
+    var btnMeta2 = document.getElementById('btnSaveMeta');
+    if(pMeta2) pMeta2.disabled = !editor;
+    if(btnMeta2) btnMeta2.disabled = !editor;
   }
   renderConteudos();
   if(document.getElementById('page-conteudo').classList.contains('active')) renderConteudoPage();
@@ -1789,6 +1873,26 @@ document.addEventListener('DOMContentLoaded', function(){
   // Panel
   document.getElementById('overlay').addEventListener('click', closePanel);
   document.getElementById('panelClose').addEventListener('click', closePanel);
+  // Meta save
+  document.getElementById('btnSaveMeta').addEventListener('click', function(){
+    if(!editor || panelIdx < 0) return;
+    S.ests[panelIdx].meta      = document.getElementById('pMeta').value.replace(/[^0-9.,]/g,'');
+    S.ests[panelIdx].resultado = document.getElementById('pResultado').value.replace(/[^0-9.,]/g,'');
+    // Save to perfil so it persists in Supabase
+    S.ests[panelIdx].perfil.meta      = S.ests[panelIdx].meta;
+    S.ests[panelIdx].perfil.resultado = S.ests[panelIdx].resultado;
+    saveEstagiario(S.ests[panelIdx]);
+    persist(true);
+    // Update score display
+    var sc = calcScore(S.ests[panelIdx]);
+    var pScore = document.getElementById('pScore');
+    var pBar   = document.getElementById('pScoreBar');
+    if(pScore){ pScore.textContent = sc+'/10'; pScore.style.color = scoreColor(sc); }
+    if(pBar)  { pBar.style.width = (sc*10)+'%'; pBar.style.background = scoreColor(sc); }
+    renderCards();
+    var b = document.getElementById('metaSaved'); b.classList.add('show'); setTimeout(function(){ b.classList.remove('show'); }, 2500);
+  });
+
   // Atenção button
   document.getElementById('btnAtencao').addEventListener('click', function(){
     if(!editor || panelIdx < 0) return;
