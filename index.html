@@ -1077,9 +1077,9 @@ async function loadFromDB(){
     // Still render the page even if DB fails
   }
   showLoading(false);
-  setupImgInput('cDesc'); setupImgInput('cDescR');
-  loadFromDB();
-  // obsolete: renderRanking(); renderDescricao(); renderGestoresList(); updateProgress();
+  updateMetrics(); renderCiclos(); renderCards(); renderTrilha();
+  renderCadList(); renderTimeline(); renderConteudos(); renderRanking();
+  renderDescricao(); renderGestoresList(); updateProgress();
 }
 
 function showLoading(on){
