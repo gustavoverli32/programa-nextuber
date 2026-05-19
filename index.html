@@ -1869,6 +1869,8 @@ function loadEditCad(idx){
   document.getElementById('cadIdade').value = e.perfil&&e.perfil.idade?e.perfil.idade:'';
   document.getElementById('cadFunc').value = e.perfil&&e.perfil.funcional?e.perfil.funcional:'';
   document.getElementById('cadInicio').value = e.perfil&&e.perfil.inicio?e.perfil.inicio:'';
+  var gfEl=document.getElementById('cadGestorFunc');
+  if(gfEl) gfEl.value=(e.perfil&&e.perfil.gestor_funcional)||e.gestor_funcional||'';
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
@@ -1891,7 +1893,7 @@ function updateCadPreview(){
     prevSub.textContent = 'Preencha o nome para começar';
   }
 }
-function savePerfil(){
+async function savePerfil(){
   if(!editor) return;
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
@@ -1903,36 +1905,43 @@ function savePerfil(){
     inicio: document.getElementById('cadInicio').value,
     gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9)
   };
-  if(cadIdx>=0){
-    // editing existing
-    S.ests[cadIdx].nome = nome;
-    S.ests[cadIdx].perfil = perfil;
-    S.ests[cadIdx].gestor_funcional = perfil.gestor_funcional||'';
+
+  if(cadIdx >= 0){
+    // Editando estagiário existente
+    var e = S.ests[cadIdx];
+    e.nome = nome;
+    e.perfil = perfil;
+    e.gestor_funcional = perfil.gestor_funcional||'';
+    await saveEstagiario(e);
   } else {
-    // find first slot with default name or add new
-    var slot = -1;
-    for(var i=0;i<S.ests.length;i++){
-      if(!S.ests[i].perfil||!S.ests[i].perfil.funcional){slot=i;break;}
-    }
-    if(slot>=0){
-      S.ests[slot].nome = nome;
-      S.ests[slot].perfil = perfil;
-      S.ests[slot].gestor_funcional = perfil.gestor_funcional||'';
-    } else {
-      S.ests.push({nome:nome, meses:Array(6).fill('⬜ Pendente'), obs:'', perfil:perfil});
-    }
+    // Novo estagiário — insert direto no Supabase
+    var novoEst = {
+      nome: nome,
+      meses: Array(6).fill('⬜ Pendente'),
+      obs: '',
+      atencao: false,
+      perfil: perfil,
+      trilhaChecks: {},
+      gestor_funcional: perfil.gestor_funcional||'',
+      senha_hash: ''
+    };
+    S.ests.push(novoEst);
+    await saveEstagiario(novoEst);
   }
-  saveEstagiario(cadIdx>=0 ? S.ests[cadIdx] : S.ests[S.ests.length-1]);
+
   persist(true); renderCards(); renderCadList();
   // reset form
   cadIdx=-1;
-  ['cadNome','cadIdade','cadFunc','cadInicio'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
   document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário';
   document.getElementById('cadAv').textContent='?';
   document.getElementById('cadAv').classList.remove('filled');
   document.getElementById('cadPreviewName').textContent='Novo estagiário';
   document.getElementById('cadPreviewSub').textContent='Preencha o nome para começar';
-  var b=document.getElementById('cadSavedLbl'); b.classList.add('show'); setTimeout(function(){b.classList.remove('show');},2500);
+  var b=document.getElementById('cadSavedLbl');
+  b.classList.add('show'); setTimeout(function(){b.classList.remove('show');},2500);
 }
 function selectCad(idx){ loadEditCad(idx); }
 
@@ -2001,7 +2010,7 @@ function doLogin(){
 }
 function setCadInputState(){
   var dis=!editor;
-  ['cadNome','cadIdade','cadFunc','cadInicio'].forEach(function(id){
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=dis;
   });
   var btn=document.getElementById('cadAddBtn'); if(btn) btn.disabled=dis;
@@ -2256,11 +2265,18 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnAddGestor').addEventListener('click',async function(){
     var nome=document.getElementById('gestorNome').value.trim();
     var func=document.getElementById('gestorFunc').value.replace(/[^0-9]/g,'').slice(0,9);
-    if(!nome||func.length<9){alert('Preencha nome e funcional completo.');return;}
-    await saveGestor(nome,func);
-    document.getElementById('gestorNome').value='';document.getElementById('gestorFunc').value='';
-    renderGestoresList();
-    var sv=document.getElementById('gestorSaved');if(sv){sv.classList.add('show');setTimeout(function(){sv.classList.remove('show');},2500);}
+    if(!nome){alert('Preencha o nome do gestor.');return;}
+    if(func.length<9){alert('Funcional deve ter 9 dígitos.');return;}
+    var resultado = await saveGestor(nome,func);
+    if(resultado){
+      document.getElementById('gestorNome').value='';
+      document.getElementById('gestorFunc').value='';
+      renderGestoresList();
+      var sv=document.getElementById('gestorSaved');
+      if(sv){sv.classList.add('show');setTimeout(function(){sv.classList.remove('show');},2500);}
+    } else {
+      alert('Erro ao salvar gestor. Verifique se o funcional já existe.');
+    }
   });
   document.getElementById('gestorFunc').addEventListener('input',function(){this.value=this.value.replace(/[^0-9]/g,'').slice(0,9);});
 
