@@ -1213,12 +1213,13 @@ async function saveEstagiario(est){
   var data={nome:est.nome,meses:est.meses,obs:est.obs,atencao:est.atencao,perfil:est.perfil,trilha_checks:est.trilhaChecks||{},senha_hash:est.senha_hash||''};
   if(est.id){
     var r = await sb.from('estagiarios').update(data).eq('id', est.id);
-    if(r.error){ console.error('saveEstagiario:', r.error); showToast('Erro ao salvar.', true); return; }
+    if(r.error){ console.error('saveEstagiario update error:', r.error); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return false; }
   } else {
     var r = await sb.from('estagiarios').insert(data).select().single();
-    if(r.error){ console.error('saveEstagiario:', r.error); showToast('Erro ao salvar.', true); return; }
+    if(r.error){ console.error('saveEstagiario insert error:', r.error); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return false; }
     est.id = r.data.id;
   }
+  return true;
 }
 
 async function saveConteudo(c){
@@ -1261,7 +1262,9 @@ async function salvarSnapshot(eid,tri){
 async function saveGestor(nome,func){
   var hash=await hashSenha(func.slice(0,4));
   var r=await sb.from('gestores').insert({nome:nome,funcional:func,senha_hash:hash}).select().single();
-  if(!r.error&&r.data){S.gestores.push(r.data);return r.data;}
+  if(r.error){console.error('saveGestor error:',r.error);return null;}
+  if(r.data){S.gestores.push(r.data);return r.data;}
+  return null;
 }
 async function deleteGestor(id){await sb.from('gestores').delete().eq('id',id);S.gestores=S.gestores.filter(function(g){return g.id!==id;});}
 async function saveFeedback(eid,dados){
@@ -1894,7 +1897,10 @@ function updateCadPreview(){
   }
 }
 async function savePerfil(){
-  if(!editor) return;
+  if(!editor){
+    alert('Entre como tutora para cadastrar estagiários.');
+    return;
+  }
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
@@ -1912,7 +1918,8 @@ async function savePerfil(){
     e.nome = nome;
     e.perfil = perfil;
     e.gestor_funcional = perfil.gestor_funcional||'';
-    await saveEstagiario(e);
+    var ok = await saveEstagiario(e);
+    if(!ok) return;
   } else {
     // Novo estagiário — insert direto no Supabase
     var novoEst = {
@@ -1926,7 +1933,8 @@ async function savePerfil(){
       senha_hash: ''
     };
     S.ests.push(novoEst);
-    await saveEstagiario(novoEst);
+    var ok2 = await saveEstagiario(novoEst);
+    if(!ok2){ S.ests.pop(); return; }
   }
 
   persist(true); renderCards(); renderCadList();
@@ -1997,7 +2005,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -2161,24 +2169,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('overlay').addEventListener('click', closePanel);
   document.getElementById('panelClose').addEventListener('click', closePanel);
   // Meta save
-  document.getElementById('btnSaveMeta').addEventListener('click', function(){
-    if(!editor || panelIdx < 0) return;
-    S.ests[panelIdx].meta      = document.getElementById('pMeta').value.replace(/[^0-9.,]/g,'');
-    S.ests[panelIdx].resultado = document.getElementById('pResultado').value.replace(/[^0-9.,]/g,'');
-    // Save to perfil so it persists in Supabase
-    S.ests[panelIdx].perfil.meta      = S.ests[panelIdx].meta;
-    S.ests[panelIdx].perfil.resultado = S.ests[panelIdx].resultado;
-    saveEstagiario(S.ests[panelIdx]);
-    persist(true);
-    // Update score display
-    var sc = calcScore(S.ests[panelIdx]);
-    var pScore = document.getElementById('pScore');
-    var pBar   = document.getElementById('pScoreBar');
-    if(pScore){ pScore.textContent = sc+'/10'; pScore.style.color = scoreColor(sc); }
-    if(pBar)  { pBar.style.width = (sc*10)+'%'; pBar.style.background = scoreColor(sc); }
-    renderCards();
-    var b = document.getElementById('metaSaved'); b.classList.add('show'); setTimeout(function(){ b.classList.remove('show'); }, 2500);
-  });
+  
 
   // Atenção button
   document.getElementById('btnAtencao').addEventListener('click', function(){
