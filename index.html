@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Formação de Estagiários 2.0 — Itaú</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -974,14 +974,128 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 var PWD = 'kamilla2025';
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
-var sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
-  global: {
-    fetch: function(url, options) {
-      return fetch(url, options);
+
+// ── SUPABASE REST CLIENT (sem SDK) ─────────────────────────────────────
+var sb = (function(){
+  var BASE = SUPA_URL + '/rest/v1';
+  var HEADERS = {
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+
+  function buildQuery(params){
+    if(!params) return '';
+    var parts = [];
+    if(params.select) parts.push('select=' + params.select);
+    if(params.eq) Object.keys(params.eq).forEach(function(k){ parts.push(k + '=eq.' + params.eq[k]); });
+    if(params.order) parts.push('order=' + params.order.col + (params.order.asc===false?'.desc':'.asc'));
+    if(params.limit) parts.push('limit=' + params.limit);
+    if(params.single) HEADERS['Accept'] = 'application/vnd.pgrst.object+json';
+    return parts.length ? '?' + parts.join('&') : '';
+  }
+
+  function makeRequest(method, table, data, params){
+    var url = BASE + '/' + table + buildQuery(params);
+    var opts = { method: method, headers: Object.assign({}, HEADERS) };
+    if(data) opts.body = JSON.stringify(data);
+    if(params && params.single) opts.headers['Accept'] = 'application/vnd.pgrst.object+json';
+    if(method === 'POST' && params && params.upsert) opts.headers['Prefer'] = 'return=representation,resolution=merge-duplicates';
+    return fetch(url, opts).then(function(res){
+      if(res.status === 204) return {data: null, error: null};
+      return res.json().then(function(json){
+        if(!res.ok) return {data: null, error: json};
+        return {data: json, error: null};
+      });
+    }).catch(function(e){
+      return {data: null, error: {message: e.message}};
+    });
+  }
+
+  // Query builder
+  function QueryBuilder(table){
+    this._table = table;
+    this._params = {select: '*'};
+    this._method = 'GET';
+    this._data = null;
+  }
+  QueryBuilder.prototype.select = function(s){ this._params.select = s; return this; };
+  QueryBuilder.prototype.eq = function(k,v){ if(!this._params.eq) this._params.eq={}; this._params.eq[k]=v; return this; };
+  QueryBuilder.prototype.order = function(col, opts){ this._params.order={col:col, asc: !(opts&&opts.ascending===false)}; return this; };
+  QueryBuilder.prototype.limit = function(n){ this._params.limit=n; return this; };
+  QueryBuilder.prototype.single = function(){ this._params.single=true; return this; };
+  QueryBuilder.prototype.maybeSingle = function(){ this._params.single=true; this._params.maybe=true; return this; };
+  QueryBuilder.prototype.then = function(resolve, reject){
+    return makeRequest(this._method, this._table, this._data, this._params).then(resolve, reject);
+  };
+
+  function InsertBuilder(table, data, opts){
+    this._table = table; this._data = data; this._opts = opts||{};
+  }
+  InsertBuilder.prototype.select = function(){ this._doSelect=true; return this; };
+  InsertBuilder.prototype.single = function(){ this._single=true; return this; };
+  InsertBuilder.prototype.then = function(resolve, reject){
+    var headers = Object.assign({}, HEADERS);
+    if(this._opts.onConflict) headers['Prefer'] = 'return=representation,resolution=merge-duplicates';
+    else headers['Prefer'] = 'return=representation';
+    if(this._single) headers['Accept'] = 'application/vnd.pgrst.object+json';
+    var url = BASE + '/' + this._table;
+    if(this._opts.onConflict) url += '?on_conflict=' + this._opts.onConflict;
+    var opts = { method: 'POST', headers: headers, body: JSON.stringify(this._data) };
+    return fetch(url, opts).then(function(res){
+      if(res.status===204) return {data:null, error:null};
+      return res.json().then(function(json){
+        if(!res.ok) return {data:null, error:json};
+        return {data:json, error:null};
+      });
+    }).catch(function(e){ return {data:null, error:{message:e.message}}; }).then(resolve, reject);
+  };
+
+  function UpdateBuilder(table, data){
+    this._table=table; this._data=data; this._eq={};
+  }
+  UpdateBuilder.prototype.eq = function(k,v){ this._eq[k]=v; return this; };
+  UpdateBuilder.prototype.select = function(){ this._doSelect=true; return this; };
+  UpdateBuilder.prototype.single = function(){ this._single=true; return this; };
+  UpdateBuilder.prototype.then = function(resolve, reject){
+    var headers = Object.assign({}, HEADERS);
+    headers['Prefer'] = 'return=representation';
+    if(this._single) headers['Accept'] = 'application/vnd.pgrst.object+json';
+    var eqStr = Object.keys(this._eq).map(function(k){ return k+'=eq.'+this._eq[k]; }.bind(this)).join('&');
+    var url = BASE + '/' + this._table + (eqStr ? '?' + eqStr : '');
+    return fetch(url, {method:'PATCH', headers:headers, body:JSON.stringify(this._data)})
+      .then(function(res){
+        if(res.status===204) return {data:null,error:null};
+        return res.json().then(function(json){ return res.ok ? {data:json,error:null} : {data:null,error:json}; });
+      }).catch(function(e){ return {data:null,error:{message:e.message}}; }).then(resolve, reject);
+  };
+
+  function DeleteBuilder(table){
+    this._table=table; this._eq={};
+  }
+  DeleteBuilder.prototype.eq = function(k,v){ this._eq[k]=v; return this; };
+  DeleteBuilder.prototype.then = function(resolve, reject){
+    var eqStr = Object.keys(this._eq).map(function(k){ return k+'=eq.'+this._eq[k]; }.bind(this)).join('&');
+    var url = BASE + '/' + this._table + (eqStr ? '?' + eqStr : '');
+    return fetch(url, {method:'DELETE', headers:Object.assign({},HEADERS,{'Prefer':''})})
+      .then(function(res){ return {data:null,error:res.ok?null:{message:'Delete failed'}}; })
+      .catch(function(e){ return {data:null,error:{message:e.message}}; }).then(resolve, reject);
+  };
+
+  return {
+    from: function(table){
+      return {
+        select: function(s){ return new QueryBuilder(table).select(s||'*'); },
+        insert: function(data){ return new InsertBuilder(table, data); },
+        update: function(data){ return new UpdateBuilder(table, data); },
+        delete: function(){ return new DeleteBuilder(table); },
+        upsert: function(data, opts){ return new InsertBuilder(table, data, opts||{}); }
+      };
     }
-  },
-  auth: { persistSession: false }
-});
+  };
+})();
+
 var SOPTS = ['⬜ Pendente','🔄 Em andamento','✅ Concluído','⚠️ Atenção','🔁 Renovado'];
 var ML = ['Mês 1','Mês 2','Mês 3','Mês 4','Mês 5','Mês 6'];
 
@@ -1224,7 +1338,7 @@ async function saveEstagiario(est){
   } else {
     console.log('Inserting data:', JSON.stringify(data));
     var r = await sb.from('estagiarios').insert(data).select().single();
-    if(r.error){ var msg=r.error.message||r.error.details||r.error.hint||JSON.stringify(r.error); console.error('saveEstagiario insert error:', JSON.stringify(r.error)); alert('Erro Supabase: ' + msg); return false; }
+    if(r.error){ var msg=r.error.message||r.error.details||r.error.hint||JSON.stringify(r.error); console.error('saveEstagiario insert error:', JSON.stringify(r.error)); console.error('Erro Supabase:', msg); return false; }
     est.id = r.data.id;
   }
   return true;
@@ -1930,6 +2044,11 @@ async function savePerfil(){
     if(!ok) return;
   } else {
     // Novo estagiário — insert direto no Supabase
+    // Verificar funcional duplicado
+    if(func && S.ests.find(function(x){ return x.perfil && x.perfil.funcional === func; })){
+      alert('Já existe um estagiário com este funcional.');
+      return;
+    }
     var novoEst = {
       nome: nome,
       meses: Array(6).fill('⬜ Pendente'),
@@ -2013,7 +2132,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; document.getElementById('cadAv').textContent='?'; document.getElementById('cadAv').classList.remove('filled'); document.getElementById('cadPreviewName').textContent='Novo estagiário'; ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
