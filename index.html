@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Formação de Estagiários 2.0 — Itaú</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -974,7 +974,14 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 var PWD = 'kamilla2025';
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
-var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+var sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  global: {
+    fetch: function(url, options) {
+      return fetch(url, options);
+    }
+  },
+  auth: { persistSession: false }
+});
 var SOPTS = ['⬜ Pendente','🔄 Em andamento','✅ Concluído','⚠️ Atenção','🔁 Renovado'];
 var ML = ['Mês 1','Mês 2','Mês 3','Mês 4','Mês 5','Mês 6'];
 
@@ -1215,8 +1222,9 @@ async function saveEstagiario(est){
     var r = await sb.from('estagiarios').update(data).eq('id', est.id);
     if(r.error){ console.error('saveEstagiario update error:', r.error); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return false; }
   } else {
+    console.log('Inserting data:', JSON.stringify(data));
     var r = await sb.from('estagiarios').insert(data).select().single();
-    if(r.error){ console.error('saveEstagiario insert error:', r.error); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return false; }
+    if(r.error){ var msg=r.error.message||r.error.details||r.error.hint||JSON.stringify(r.error); console.error('saveEstagiario insert error:', JSON.stringify(r.error)); alert('Erro Supabase: ' + msg); return false; }
     est.id = r.data.id;
   }
   return true;
