@@ -1028,7 +1028,33 @@ var sb = (function(){
   QueryBuilder.prototype.single = function(){ this._params.single=true; return this; };
   QueryBuilder.prototype.maybeSingle = function(){ this._params.single=true; this._params.maybe=true; return this; };
   QueryBuilder.prototype.then = function(resolve, reject){
-    return makeRequest(this._method, this._table, this._data, this._params).then(resolve, reject);
+    var self = this;
+    var headers = Object.assign({}, HEADERS);
+    var parts = [];
+    if(self._params.select) parts.push('select='+self._params.select);
+    if(self._params.eq) Object.keys(self._params.eq).forEach(function(k){ parts.push(k+'=eq.'+self._params.eq[k]); });
+    if(self._params.order) parts.push('order='+self._params.order.col+(self._params.order.asc===false?'.desc':'.asc'));
+    if(self._params.limit) parts.push('limit='+self._params.limit);
+    if(self._params.single) headers['Accept'] = 'application/vnd.pgrst.object+json';
+    var url = BASE + '/' + self._table + (parts.length ? '?' + parts.join('&') : '');
+    return fetch(url, {method:'GET', headers:headers})
+      .then(function(res){
+        if(res.status===204) return {data:null,error:null};
+        if(res.status===406 && self._params.maybe) return {data:null,error:null};
+        return res.text().then(function(text){
+          if(!text) return {data: self._params.single?null:[], error:null};
+          try {
+            var json=JSON.parse(text);
+            if(!res.ok){
+              if(res.status===406 && self._params.maybe) return {data:null,error:null};
+              return {data:null,error:json};
+            }
+            return {data:json, error:null};
+          } catch(e){ return {data:null,error:{message:e.message}}; }
+        });
+      })
+      .catch(function(e){ return {data:null,error:{message:e.message}}; })
+      .then(resolve, reject);
   };
 
   function InsertBuilder(table, data, opts){
@@ -1037,18 +1063,28 @@ var sb = (function(){
   InsertBuilder.prototype.select = function(){ this._doSelect=true; return this; };
   InsertBuilder.prototype.single = function(){ this._single=true; return this; };
   InsertBuilder.prototype.then = function(resolve, reject){
+    var self = this;
     var headers = Object.assign({}, HEADERS);
     if(this._opts.onConflict) headers['Prefer'] = 'return=representation,resolution=merge-duplicates';
     else headers['Prefer'] = 'return=representation';
-    if(this._single) headers['Accept'] = 'application/vnd.pgrst.object+json';
     var url = BASE + '/' + this._table;
     if(this._opts.onConflict) url += '?on_conflict=' + this._opts.onConflict;
     var opts = { method: 'POST', headers: headers, body: JSON.stringify(this._data) };
     return fetch(url, opts).then(function(res){
       if(res.status===204) return {data:null, error:null};
-      return res.json().then(function(json){
-        if(!res.ok) return {data:null, error:json};
-        return {data:json, error:null};
+      return res.text().then(function(text){
+        if(!text) return {data:null, error:null};
+        try {
+          var json = JSON.parse(text);
+          if(!res.ok) return {data:null, error:json};
+          // API returns array, single() returns first item
+          if(Array.isArray(json)) {
+            return {data: self._single ? json[0]||null : json, error:null};
+          }
+          return {data:json, error:null};
+        } catch(e) {
+          return {data:null, error:{message:'Parse error: '+text}};
+        }
       });
     }).catch(function(e){ return {data:null, error:{message:e.message}}; }).then(resolve, reject);
   };
@@ -1062,13 +1098,20 @@ var sb = (function(){
   UpdateBuilder.prototype.then = function(resolve, reject){
     var headers = Object.assign({}, HEADERS);
     headers['Prefer'] = 'return=representation';
-    if(this._single) headers['Accept'] = 'application/vnd.pgrst.object+json';
     var eqStr = Object.keys(this._eq).map(function(k){ return k+'=eq.'+this._eq[k]; }.bind(this)).join('&');
     var url = BASE + '/' + this._table + (eqStr ? '?' + eqStr : '');
     return fetch(url, {method:'PATCH', headers:headers, body:JSON.stringify(this._data)})
       .then(function(res){
         if(res.status===204) return {data:null,error:null};
-        return res.json().then(function(json){ return res.ok ? {data:json,error:null} : {data:null,error:json}; });
+        return res.text().then(function(text){
+          if(!text) return {data:null,error:null};
+          try {
+            var json=JSON.parse(text);
+            if(!res.ok) return {data:null,error:json};
+            if(Array.isArray(json)) return {data:json[0]||null,error:null};
+            return {data:json,error:null};
+          } catch(e){ return {data:null,error:{message:e.message}}; }
+        });
       }).catch(function(e){ return {data:null,error:{message:e.message}}; }).then(resolve, reject);
   };
 
