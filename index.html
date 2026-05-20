@@ -807,6 +807,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       </div>
       <div class="cad-single-footer">
         <button class="btn-cad-add" id="cadAddBtn">+ Adicionar estagiário</button>
+        <button class="btn-cancel-content" id="btnCancelarEdicao" style="display:none;padding:10px 16px;margin-left:8px;">✕ Cancelar</button>
         <span class="saved-lbl" id="cadSavedLbl">✓ Adicionado</span>
       </div>
     </div>
@@ -1998,6 +1999,8 @@ function loadEditCad(idx){
   if(gfEl) gfEl.value=(e.perfil&&e.perfil.gestor_funcional)||e.gestor_funcional||'';
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
+  var cancelBtn = document.getElementById('btnCancelarEdicao');
+  if(cancelBtn) cancelBtn.style.display = 'inline-flex';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
   document.getElementById('cadNome').focus();
 }
@@ -2071,6 +2074,8 @@ async function savePerfil(){
     var el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário';
+  var cancelBtnR = document.getElementById('btnCancelarEdicao');
+  if(cancelBtnR) cancelBtnR.style.display = 'none';
   document.getElementById('cadAv').textContent='?';
   document.getElementById('cadAv').classList.remove('filled');
   document.getElementById('cadPreviewName').textContent='Novo estagiário';
@@ -2132,7 +2137,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; document.getElementById('cadAv').textContent='?'; document.getElementById('cadAv').classList.remove('filled'); document.getElementById('cadPreviewName').textContent='Novo estagiário'; ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; var cbtn=document.getElementById('btnCancelarEdicao'); if(cbtn)cbtn.style.display='none'; document.getElementById('cadAv').textContent='?'; document.getElementById('cadAv').classList.remove('filled'); document.getElementById('cadPreviewName').textContent='Novo estagiário'; ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -2451,6 +2456,18 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Cadastro
   document.getElementById('cadAddBtn').addEventListener('click', savePerfil);
+  document.getElementById('btnCancelarEdicao').addEventListener('click', function(){
+    cadIdx = -1;
+    this.style.display = 'none';
+    document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
+    document.getElementById('cadAv').textContent = '?';
+    document.getElementById('cadAv').classList.remove('filled');
+    document.getElementById('cadPreviewName').textContent = 'Novo estagiário';
+    document.getElementById('cadPreviewSub').textContent = 'Preencha o nome para começar';
+    ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.value = '';
+    });
+  });
   document.getElementById('cadFunc').addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,'').slice(0,9); });
   document.getElementById('cadNome').addEventListener('input', updateCadPreview);
   setCadInputState();
