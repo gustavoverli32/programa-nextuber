@@ -791,6 +791,34 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="cad-list-title">Estagiários cadastrados <span class="cad-list-count" id="cadListCount">0</span></div>
       <div id="cadList"></div>
     </div>
+
+    <div id="gestoresSection" style="display:none;margin-top:32px;">
+      <div class="cad-list-title" style="margin-bottom:12px;">Gestores <span class="cad-list-count" id="gestoresCount">0</span></div>
+      <div class="cad-single-card" style="margin-bottom:16px;">
+        <div class="cad-single-header">
+          <div class="cad-form-av" style="background:var(--ink);color:#fff;font-size:16px;">G</div>
+          <div>
+            <div class="cad-single-title">Novo gestor</div>
+            <div class="cad-single-sub">A senha inicial será os 4 primeiros dígitos do funcional</div>
+          </div>
+        </div>
+        <div class="cad-single-fields">
+          <div class="field-grp" style="grid-column:1/-1;">
+            <div class="field-lbl">Nome do gestor</div>
+            <input class="field-in" type="text" id="gestorNome" placeholder="Nome completo" maxlength="60">
+          </div>
+          <div class="field-grp" style="grid-column:1/-1;">
+            <div class="field-lbl">Funcional (9 dígitos)</div>
+            <input class="field-in" type="text" id="gestorFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
+          </div>
+        </div>
+        <div class="cad-single-footer">
+          <button class="btn-cad-add" id="btnAddGestor">+ Adicionar gestor</button>
+          <span class="saved-lbl" id="gestorSaved">✓ Adicionado</span>
+        </div>
+      </div>
+      <div id="gestoresList"></div>
+    </div>
   </section>
 
   <!-- TRILHAS -->
@@ -982,8 +1010,17 @@ var TRILHAS = {
   }
 };
 
+
+// ── HELPERS GLOBAIS ─────────────────────────────────────────────────────
+async function hashSenha(senha) {
+  var enc = new TextEncoder();
+  var data = enc.encode(senha + 'itau_formacao_2025');
+  var buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
 // ── STATE ──────────────────────────────────────────────────────────────────
-var S = { ests:[], tl:Array(6).fill(false), conteudos:[] };
+var S = { ests:[], tl:Array(6).fill(false), conteudos:[], gestores:[] };
 var DB_LOADED = false;
 
 function mkEstObj(row){
@@ -1026,7 +1063,7 @@ async function loadFromDB(){
   }
   showLoading(false);
   updateMetrics(); renderCiclos(); renderCards(); renderTrilha();
-  renderCadList(); renderTimeline(); renderConteudos(); updateProgress();
+  renderCadList(); renderTimeline(); renderConteudos(); renderGestoresList(); updateProgress();
 }
 
 function showLoading(on){
@@ -1143,7 +1180,7 @@ function renderConteudoPage(){
 }
 
 
-var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1;
+var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null;
 
 // ── PERSIST ────────────────────────────────────────────────────────────────
 // persist is now async — call with await or fire-and-forget
@@ -1190,6 +1227,20 @@ async function deleteConteudo(id){
 
 async function deleteEstagiario(id){
   await sb.from('estagiarios').delete().eq('id', id);
+}
+
+
+async function saveGestor(nome, funcional){
+  var hash = await hashSenha(funcional.slice(0,4));
+  var r = await sb.from('gestores').insert({nome:nome, funcional:funcional, senha_hash:hash}).select().single();
+  if(r.error){ console.error('saveGestor error:', r.error); return null; }
+  if(r.data){ S.gestores.push(r.data); return r.data; }
+  return null;
+}
+
+async function deleteGestor(id){
+  await sb.from('gestores').delete().eq('id', id);
+  S.gestores = S.gestores.filter(function(g){ return g.id !== id; });
 }
 
 async function saveTimeline(){
@@ -1589,6 +1640,39 @@ function closePanel(){
 }
 
 // ── CADASTRO ───────────────────────────────────────────────────────────────
+
+function renderGestoresList(){
+  var sec = document.getElementById('gestoresSection');
+  if(sec) sec.style.display = editor ? 'block' : 'none';
+  var el = document.getElementById('gestoresList');
+  var countEl = document.getElementById('gestoresCount');
+  if(!el) return;
+  if(countEl) countEl.textContent = (S.gestores||[]).length;
+  if(!S.gestores || !S.gestores.length){
+    el.innerHTML = '<div class="cad-list-empty">Nenhum gestor cadastrado.</div>';
+    return;
+  }
+  el.innerHTML = S.gestores.map(function(g){
+    return '<div class="cad-list-row">'
+      +'<div class="cad-list-av" style="background:var(--ink);color:#fff;">'+g.nome[0].toUpperCase()+'</div>'
+      +'<div class="cad-list-info">'
+        +'<div class="cad-list-name">'+g.nome+'</div>'
+        +'<div class="cad-list-meta"><span>#'+g.funcional+'</span></div>'
+      +'</div>'
+      +'<button class="cad-list-btn cad-del-btn" data-delgestor="'+g.id+'" style="color:#DC2626;border-color:#FECACA;">Remover</button>'
+    +'</div>';
+  }).join('');
+  el.querySelectorAll('[data-delgestor]').forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      var id = this.dataset.delgestor;
+      var g = S.gestores.find(function(x){ return x.id === id; });
+      if(!confirm('Remover o gestor "'+g.nome+'"?')) return;
+      await deleteGestor(id);
+      renderGestoresList();
+    });
+  });
+}
+
 function renderCadChips(){
   renderCadList();
 }
@@ -1763,7 +1847,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -2017,6 +2101,31 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Cadastro
   document.getElementById('cadAddBtn').addEventListener('click', savePerfil);
+
+  // Gestores
+  document.getElementById('btnAddGestor').addEventListener('click', async function(){
+    var nome = document.getElementById('gestorNome').value.trim();
+    var func = document.getElementById('gestorFunc').value.replace(/[^0-9]/g,'').slice(0,9);
+    if(!nome){ alert('Preencha o nome do gestor.'); return; }
+    if(func.length < 9){ alert('Funcional deve ter 9 dígitos.'); return; }
+    if(S.gestores.find(function(g){ return g.funcional === func; })){
+      alert('Já existe um gestor com este funcional.');
+      return;
+    }
+    var r = await saveGestor(nome, func);
+    if(r){
+      document.getElementById('gestorNome').value = '';
+      document.getElementById('gestorFunc').value = '';
+      renderGestoresList();
+      var sv = document.getElementById('gestorSaved');
+      if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2500); }
+    } else {
+      alert('Erro ao salvar gestor.');
+    }
+  });
+  document.getElementById('gestorFunc').addEventListener('input', function(){
+    this.value = this.value.replace(/[^0-9]/g,'').slice(0,9);
+  });
   document.getElementById('cadFunc').addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,'').slice(0,9); });
   document.getElementById('cadNome').addEventListener('input', updateCadPreview);
   setCadInputState();
