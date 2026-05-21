@@ -2667,6 +2667,8 @@ function applyModoGestor(){
   if(banner) banner.classList.add('gone');
   // Esconder itens tutora-only
   document.querySelectorAll('[data-tutora="only"]').forEach(function(el){ el.style.display='none'; });
+  // Acompanhamento SEMPRE liberado para o gestor (acesso obrigatório)
+  document.querySelectorAll('[data-page="estagiarios"]').forEach(function(el){ el.style.display=''; });
   // Aplicar permissões customizadas: liberar áreas extras
   var p = (gestorLogado && gestorLogado.permissoes) || {};
   if(p.trilhas){
