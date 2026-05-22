@@ -376,7 +376,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 .obs-saved.show{opacity:1;}
 
 /* ── MODALS ── */
-.login-ov,.modal-ov{position:fixed;inset:0;background:rgba(26,25,22,.55);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;}
+.login-ov,.modal-ov{position:fixed;inset:0;background:rgba(26,25,22,.55);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;}
 .login-ov.open,.modal-ov.open{display:flex;}
 .login-box,.modal-box{background:var(--surface);border-radius:var(--r);padding:30px 32px;width:100%;max-width:340px;box-shadow:0 24px 80px rgba(0,0,0,.2);}
 .login-logo{display:flex;align-items:center;gap:11px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
@@ -2694,6 +2694,12 @@ function logoutGestor(){
 }
 
 function openLoginModal(){
+  // Fechar drawer mobile (se aberto)
+  var drawer = document.getElementById('drawer');
+  var drawerOv = document.getElementById('drawerOverlay');
+  if(drawer) drawer.classList.remove('open');
+  if(drawerOv) drawerOv.classList.remove('open');
+  
   var tw = document.getElementById('loginTipoWrap');
   var ttw = document.getElementById('loginTutoraWrap');
   var gw = document.getElementById('loginGestorWrap');
