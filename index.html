@@ -1020,8 +1020,19 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       </label>
     </div>
 
+    <!-- Redefinir senha -->
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">🔐 Redefinir senha</div>
+      <p style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;">Caso o gestor tenha esquecido a senha, defina uma nova abaixo.</p>
+      <div class="field-grp" style="margin-bottom:8px;">
+        <div class="field-lbl">Nova senha (mínimo 4 caracteres)</div>
+        <input class="field-in" type="text" id="permNovaSenha" placeholder="Deixe em branco para manter">
+      </div>
+      <div style="font-size:10.5px;color:var(--ink3);font-style:italic;margin-top:-4px;">Dica: use os 4 primeiros dígitos do funcional para padronizar.</div>
+    </div>
+
     <input type="hidden" id="permGestorId" value="">
-    <button class="btn-login" id="btnSalvarPermissoes">Salvar permissões</button>
+    <button class="btn-login" id="btnSalvarPermissoes" style="margin-top:18px;">Salvar alterações</button>
     <button class="btn-cancel" id="btnFecharPermissoes">Cancelar</button>
   </div>
 </div>
@@ -2345,30 +2356,49 @@ function abrirPermissoesGestor(id){
   document.getElementById('permTrilhas').checked = !!perms.trilhas;
   document.getElementById('permRanking').checked = !!perms.ranking;
   document.getElementById('permTodosEstag').checked = !!perms.todos_estagiarios;
+  // Limpar campo de nova senha sempre que abrir
+  document.getElementById('permNovaSenha').value = '';
   document.getElementById('permissoesOv').classList.add('open');
 }
 
 async function salvarPermissoesGestor(){
   var id = document.getElementById('permGestorId').value;
+  var novaSenha = document.getElementById('permNovaSenha').value.trim();
+  
+  // Validar nova senha (se preenchida)
+  if(novaSenha && novaSenha.length < 4){
+    alert('A nova senha deve ter pelo menos 4 caracteres.');
+    return;
+  }
+  
   var permissoes = {
     trilhas: document.getElementById('permTrilhas').checked,
     ranking: document.getElementById('permRanking').checked,
     todos_estagiarios: document.getElementById('permTodosEstag').checked
   };
-  var r = await sb.from('gestores').update({permissoes:permissoes}).eq('id',id).select().single();
-  if(r.error){ alert('Erro ao salvar permissões: '+r.error.message); return; }
+  
+  var update = {permissoes: permissoes};
+  if(novaSenha){
+    update.senha_hash = await hashSenha(novaSenha.slice(0,4));
+  }
+  
+  var r = await sb.from('gestores').update(update).eq('id',id).select().single();
+  if(r.error){ alert('Erro ao salvar: '+r.error.message); return; }
   if(r.data){
     var i = S.gestores.findIndex(function(g){ return g.id === id; });
     if(i>=0) S.gestores[i] = r.data;
     // Se o gestor logado é esse, atualizar também
     if(gestorLogado && gestorLogado.id === id){
       gestorLogado = r.data;
-      // Re-aplicar visibility imediatamente
       if(modoGestor) applyModoGestor();
     }
   }
   document.getElementById('permissoesOv').classList.remove('open');
   renderGestoresList();
+  
+  if(novaSenha){
+    alert('Senha redefinida com sucesso! A nova senha é: ' + novaSenha.slice(0,4));
+  }
 }
 
 function temPermissao(perm){
