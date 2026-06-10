@@ -674,25 +674,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     </div>
   </section>
 
-  <!-- DESCRIÇÃO -->
-  <section id="page-descricao" class="page">
-    <div class="ph"><h1>Descrição do <em>programa</em></h1><p>Como funciona o Formação de Estagiários 2.0.</p></div>
-    <div id="descricaoList"></div>
-    <button class="btn-show-add" id="btnAddDescricao" style="display:none;margin-top:8px;">+ Adicionar seção</button>
-    <div id="descricaoFormWrap" style="display:none;background:var(--surface);border:1.5px dashed var(--border2);border-radius:var(--r);padding:20px;margin-top:12px;">
-      <div style="font-size:13.5px;font-weight:500;margin-bottom:14px;" id="descFormTitle">Nova seção</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div class="field-grp"><div class="field-lbl">Título</div><input class="field-in" type="text" id="descTitulo" maxlength="80"></div>
-        <div class="field-grp"><div class="field-lbl">Conteúdo</div><textarea class="field-in" id="descConteudo" rows="5" style="resize:vertical;min-height:120px;"></textarea></div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn-add-content" id="btnSalvarDescricao">Salvar</button>
-        <button class="btn-cancel-content" id="btnCancelarDescricao">Cancelar</button>
-        <input type="hidden" id="descEditId" value="">
-      </div>
-    </div>
-  </section>
-
   <!-- ACOMPANHAMENTO -->
   <section id="page-estagiarios" class="page">
 
@@ -1354,7 +1335,7 @@ function aplicarTextosProjeto(){
 }
 
 async function salvarTextosProjeto(){
-  await sb.from('configuracoes').upsert({id:'textos_projeto', valor:S_textos});
+  await sb.from('configuracoes').upsert({id:'textos_projeto', valor:JSON.parse(JSON.stringify(S_textos))});
 }
 
 
@@ -1412,7 +1393,7 @@ async function loadFromDB(){
   }
   showLoading(false);
   updateMetrics(); renderCiclos(); renderCards(); renderTrilha();
-  renderCadList(); renderTimeline(); renderGestoresList(); renderOverviewAll(); renderRanking(); renderDescricao(); updateProgress();
+  renderCadList(); renderTimeline(); renderGestoresList(); renderOverviewAll(); renderRanking();  updateProgress();
   await loadTextosProjeto();
   applyMode(); // garantir que itens tutora-only fiquem escondidos no carregamento
 }
@@ -1442,38 +1423,28 @@ async function persistAsync(silent){
 
 // ── Specific savers ────────────────────────────────────────────────────────
 async function saveEstagiario(est){
-  console.log('[saveEstagiario] called with:', est);
-  var data = {
-    nome:          est.nome,
-    meses:         est.meses,
-    obs:           est.obs,
-    atencao:       est.atencao,
-    perfil:        est.perfil,
+  // Serializar tudo via JSON para garantir dados puros (evita DataCloneError)
+  var data = JSON.parse(JSON.stringify({
+    nome:          String(est.nome||''),
+    meses:         est.meses||[],
+    obs:           String(est.obs||''),
+    atencao:       !!est.atencao,
+    perfil:        est.perfil||{},
     trilha_checks: est.trilhaChecks||{}
-  };
-  console.log('[saveEstagiario] data to send:', data);
+  }));
   try {
     if(est.id){
-      console.log('[saveEstagiario] UPDATE id=', est.id);
       var r = await sb.from('estagiarios').update(data).eq('id', est.id);
-      console.log('[saveEstagiario] UPDATE result:', r);
-      if(r.error){ console.error('saveEstagiario UPDATE error:', r.error); alert('Erro ao salvar (update): ' + r.error.message); return; }
+      if(r.error){ console.error('saveEstagiario UPDATE error:', JSON.stringify(r.error)); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return; }
     } else {
-      console.log('[saveEstagiario] INSERT (no id)');
       var r = await sb.from('estagiarios').insert(data).select().single();
-      console.log('[saveEstagiario] INSERT result:', r);
-      if(r.error){ console.error('saveEstagiario INSERT error:', r.error); alert('Erro ao salvar (insert): ' + r.error.message); return; }
-      est.id = r.data.id;
-      console.log('[saveEstagiario] new id assigned:', est.id);
+      if(r.error){ console.error('saveEstagiario INSERT error:', JSON.stringify(r.error)); alert('Erro ao salvar: ' + (r.error.message||JSON.stringify(r.error))); return; }
+      if(r.data) est.id = r.data.id;
     }
   } catch(e) {
-    console.error('[saveEstagiario] EXCEPTION:', e);
-    alert('Exceção ao salvar: ' + e.message);
+    console.error('saveEstagiario EXCEPTION:', e);
+    alert('Erro ao salvar: ' + (e.message||e));
   }
-}
-
-async function deleteConteudo(id){
-  await sb.from('conteudos').delete().eq('id', id);
 }
 
 async function deleteEstagiario(id){
@@ -1488,7 +1459,7 @@ async function updateMeuPerfil(nome, funcional, senha){
   if(senha){
     update.senha_hash = await hashSenha(senha.slice(0,4));
   }
-  var r = await sb.from('gestores').update(update).eq('id', gestorLogado.id).select().single();
+  var r = await sb.from('gestores').update(JSON.parse(JSON.stringify(update))).eq('id', gestorLogado.id).select().single();
   if(r.error){ console.error('updateMeuPerfil:', r.error); return null; }
   if(r.data){
     // Update local cache
@@ -1554,7 +1525,7 @@ async function saveProducaoTri(eid,tri,prod){
 }
 
 async function saveTimeline(){
-  await sb.from('configuracoes').upsert({id:'timeline', valor:S.tl});
+  await sb.from('configuracoes').upsert({id:'timeline', valor:JSON.parse(JSON.stringify(S.tl))});
 }
 function showToast(){ var t=document.getElementById('toast'); t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2000); }
 
@@ -1912,52 +1883,6 @@ function renderOverviewAll(){
   renderEncontros();
 }
 
-
-function renderDescricao(){
-  var el = document.getElementById('descricaoList');
-  var addBtn = document.getElementById('btnAddDescricao');
-  if(!el) return;
-  if(addBtn) addBtn.style.display = editor ? 'inline-flex' : 'none';
-  if(!S.descricao || !S.descricao.length){
-    el.innerHTML = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:8px 0;">Nenhuma seção cadastrada ainda.</div>';
-    return;
-  }
-  el.innerHTML = S.descricao.map(function(sec){
-    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:12px;box-shadow:var(--sh);">'
-      +'<div style="display:flex;align-items:flex-start;gap:12px;">'
-        +'<div style="flex:1;">'
-          +'<div style="font-size:15px;font-weight:500;color:var(--ink);margin-bottom:10px;">'+sec.titulo+'</div>'
-          +'<div style="font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;">'+sec.conteudo+'</div>'
-        +'</div>'
-        +(editor?'<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">'
-          +'<button class="cad-list-btn" data-editdesc="'+sec.id+'" style="padding:4px 10px;font-size:11px;">Editar</button>'
-          +'<button class="cad-list-btn cad-del-btn" data-deldesc="'+sec.id+'" style="padding:4px 10px;font-size:11px;color:#DC2626;border-color:#FECACA;">Excluir</button>'
-          +'</div>':'')
-      +'</div></div>';
-  }).join('');
-  el.querySelectorAll('[data-deldesc]').forEach(function(btn){
-    btn.addEventListener('click', async function(){
-      var id = this.dataset.deldesc;
-      if(!confirm('Excluir esta seção?')) return;
-      await sb.from('descricao_projeto').delete().eq('id', id);
-      S.descricao = S.descricao.filter(function(d){ return d.id !== id; });
-      renderDescricao();
-    });
-  });
-  el.querySelectorAll('[data-editdesc]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var id = this.dataset.editdesc;
-      var sec = S.descricao.find(function(d){ return d.id === id; });
-      if(!sec) return;
-      document.getElementById('descEditId').value = id;
-      document.getElementById('descTitulo').value = sec.titulo;
-      document.getElementById('descConteudo').value = sec.conteudo;
-      document.getElementById('descFormTitle').textContent = 'Editar seção';
-      document.getElementById('descricaoFormWrap').style.display = 'block';
-      document.getElementById('btnAddDescricao').style.display = 'none';
-    });
-  });
-}
 
 function renderRanking(){
   var card = document.getElementById('cardRanking');
@@ -2382,7 +2307,7 @@ async function salvarPermissoesGestor(){
     update.senha_hash = await hashSenha(novaSenha.slice(0,4));
   }
   
-  var r = await sb.from('gestores').update(update).eq('id',id).select().single();
+  var r = await sb.from('gestores').update(JSON.parse(JSON.stringify(update))).eq('id',id).select().single();
   if(r.error){ alert('Erro ao salvar: '+r.error.message); return; }
   if(r.data){
     var i = S.gestores.findIndex(function(g){ return g.id === id; });
@@ -2529,8 +2454,7 @@ function updateCadPreview(){
   }
 }
 async function savePerfil(){
-  console.log('[savePerfil] called, editor=', editor);
-  if(!editor){ console.log('[savePerfil] aborted - not editor'); return; }
+  if(!editor){ return; }
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
@@ -2652,7 +2576,7 @@ function goPage(id){
   if(pg) pg.classList.add('active');
   document.querySelectorAll('.nav-item[data-page="'+id+'"],.drawer-item[data-page="'+id+'"]').forEach(function(el){el.classList.add('active');});
   if(id==='overview'){ renderOverviewAll(); renderRanking(); }
-  if(id==='descricao') renderDescricao();
+  
   if(id==='estagiarios'){
     var lock = document.getElementById('estagLock');
     var content = document.getElementById('estagContent');
@@ -2797,7 +2721,6 @@ function applyMode(){
   
   renderRanking();
   renderOverviewAll();
-  if(document.getElementById('page-descricao') && document.getElementById('page-descricao').classList.contains('active')) renderDescricao();
 }
 
 // ── EVENT LISTENERS ────────────────────────────────────────────────────────
@@ -2980,13 +2903,6 @@ document.addEventListener('DOMContentLoaded', function(){
     renderCards();
   });
 
-  // Trilha access cards → open reader page
-  document.querySelectorAll('.trilha-access-card').forEach(function(card){
-    card.addEventListener('click', function(){ openConteudoPage(this.dataset.tab); });
-    card.addEventListener('mouseenter', function(){ this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,.08)'; });
-    card.addEventListener('mouseleave', function(){ this.style.transform=''; this.style.boxShadow=''; });
-  });
-
 document.getElementById('btnObs').addEventListener('click', function(){
     if(!editor||panelIdx<0) return;
     S.ests[panelIdx].obs=document.getElementById('obsTA').value;
@@ -3110,7 +3026,7 @@ document.getElementById('btnObs').addEventListener('click', function(){
   });
 
   // Cadastro
-  document.getElementById('cadAddBtn').addEventListener('click', function(){ console.log('[btn click] cadAddBtn clicked'); savePerfil(); });
+  document.getElementById('cadAddBtn').addEventListener('click', savePerfil);
 
   // Gestores
   document.getElementById('btnAddGestor').addEventListener('click', async function(){
