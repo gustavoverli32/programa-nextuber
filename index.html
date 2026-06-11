@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Forma+ · Formação que evolui</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -1062,8 +1062,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 </div>
 
 <!-- RENAME -->
-<div class="modal-ov" id="renameOv">
-
 <!-- EXPORT EXCEL MODAL -->
 <div class="login-ov" id="exportOv">
   <div class="login-box" style="max-width:420px;">
@@ -1076,6 +1074,9 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     </div>
   </div>
 </div>
+
+<!-- RENAME -->
+<div class="modal-ov" id="renameOv">
   <div class="modal-box">
     <h3>Renomear estagiário</h3>
     <input class="field-in" type="text" id="renameIn" maxlength="50" placeholder="Nome completo" style="margin-bottom:0;">
@@ -2801,6 +2802,7 @@ function closeExportModal(){
 }
 
 function exportToExcel(){
+  if(typeof XLSX === 'undefined'){ alert('Erro: biblioteca de exportação não carregou. Recarregue a página e tente novamente.'); return; }
   var container = document.getElementById('exportTriCheckboxes');
   var checkedTris = [];
   container.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb){
