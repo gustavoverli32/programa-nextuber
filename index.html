@@ -807,30 +807,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div id="pAvaliacao"></div>
     </div>
 
-    <!-- PAPÉIS E RESPONSABILIDADES -->
-    <div class="psec">
-      <div class="psec-ttl">Papéis e responsabilidades</div>
-      <div style="background:#DCFCE7;border-left:3px solid #16A34A;border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
-        <div style="font-size:10px;font-weight:600;color:#14532D;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">✓ Estagiário deve</div>
-        <div style="font-size:12px;color:#166534;display:flex;flex-direction:column;gap:4px;">
-          <span>• Realizar cursos obrigatórios</span>
-          <span>• Demonstrar interesse e iniciativa</span>
-          <span>• Atuar dentro do escopo</span>
-          <span>• Buscar aprendizado e tirar dúvidas</span>
-          <span>• Atender o cliente com empatia</span>
-        </div>
-      </div>
-      <div style="background:#FEE2E2;border-left:3px solid #DC2626;border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px 14px;">
-        <div style="font-size:10px;font-weight:600;color:#7F1D1D;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">✕ Não pode</div>
-        <div style="font-size:12px;color:#991B1B;display:flex;flex-direction:column;gap:4px;">
-          <span>• Exceder jornada de trabalho</span>
-          <span>• Atuar fora do escopo</span>
-          <span>• Compartilhar senhas e informações</span>
-          <span>• Ofertar produtos inadequados</span>
-        </div>
-      </div>
-    </div>
-
     <!-- RESULTADOS TRIMESTRAIS -->
     <div class="psec">
       <div class="psec-ttl" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1693,6 +1669,11 @@ function getTrilhaCor(key){
   return cores[key]||'#EC7000';
 }
 
+function getEffectiveTrilhaKey(e){
+  if(e.perfil && e.perfil.trilha_manual) return e.perfil.trilha_manual;
+  return (e.perfil && e.perfil.inicio) ? getTrilhaKey(e.perfil.inicio) : null;
+}
+
 
 
 function renderFeedbacks(eid){
@@ -1771,10 +1752,8 @@ function renderOverviewKpis(){
   });
   var porTrilha = {iniciante:0, intermediario:0, avancado:0};
   lista.forEach(function(e){
-    if(e.perfil && e.perfil.inicio){
-      var k = getTrilhaKey(e.perfil.inicio);
+      var k = getEffectiveTrilhaKey(e);
       if(k) porTrilha[k]++;
-    }
   });
 
   var cards = [
@@ -1805,10 +1784,8 @@ function renderOverviewTrilhaChart(){
   }
   var counts = {iniciante:0, intermediario:0, avancado:0};
   lista.forEach(function(e){
-    if(e.perfil && e.perfil.inicio){
-      var k = getTrilhaKey(e.perfil.inicio);
+      var k = getEffectiveTrilhaKey(e);
       if(k) counts[k]++;
-    }
   });
   var total = counts.iniciante + counts.intermediario + counts.avancado;
   if(total === 0){
@@ -2109,18 +2086,45 @@ function renderResultadosForTri(idx, tri){
 
 function renderPanelTrilha(idx){
   var e = S.ests[idx];
-  var key = e.perfil && e.perfil.inicio ? getTrilhaKey(e.perfil.inicio) : null;
+  var autoKey = e.perfil && e.perfil.inicio ? getTrilhaKey(e.perfil.inicio) : null;
+  var key = getEffectiveTrilhaKey(e);
+  var isManual = !!(e.perfil && e.perfil.trilha_manual);
   var el = document.getElementById('pTrilha');
   if(!el) return;
 
   if(!key){
-    el.innerHTML = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:4px 0;">Cadastre a data de início para identificar a trilha automaticamente.</div>';
+    var hFallback = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:4px 0;">Cadastre a data de início para identificar a trilha automaticamente.</div>';
+    if(editor){
+      hFallback += '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">'
+        +'<span style="font-size:12px;color:var(--ink2);">Definir trilha manualmente:</span>'
+        +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
+          +'<option value="">— Automático —</option>'
+          +'<option value="iniciante">Iniciante</option>'
+          +'<option value="intermediario">Intermediária</option>'
+          +'<option value="avancado">Avançada</option>'
+        +'</select></div>';
+    }
+    el.innerHTML = hFallback;
+    var selFallback = document.getElementById('pTrilhaManualSelect');
+    if(selFallback){
+      selFallback.value = '';
+      selFallback.addEventListener('change', function(){
+        var val = this.value || null;
+        if(!e.perfil) e.perfil = {};
+        e.perfil.trilha_manual = val;
+        saveEstagiario(e); persist(true);
+        renderPanelTrilha(idx);
+        renderAvaliacao(idx);
+        renderCards();
+        renderOverviewAll();
+      });
+    }
     return;
   }
 
   var t = TRILHAS[key];
   var cor = getTrilhaCor(key);
-  var etapa = etapaAtual(e.perfil.inicio);
+  var etapa = e.perfil && e.perfil.inicio ? etapaAtual(e.perfil.inicio) : 0;
   // Convert global etapa index to local within current trilha
   var etapaLocal;
   if(key==='iniciante') etapaLocal = etapa;            // 0,1,2
@@ -2130,11 +2134,29 @@ function renderPanelTrilha(idx){
   var canCheck = (editor || (modoGestor && gestorLogado));
   if(!e.trilhaChecks) e.trilhaChecks = {};
 
+  // Trilha header with manual override select for tutora
+  var trilhaLabel = isManual ? 'Trilha definida manualmente' : 'Trilha identificada';
   var html = '<div style="background:var(--or-f);border:1px solid rgba(236,112,0,.2);border-left:3px solid '+cor+';border-radius:8px;padding:12px 14px;margin-bottom:14px;">'
-    +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:'+cor+';font-weight:600;margin-bottom:3px;">Trilha identificada</div>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">'
+      +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:'+cor+';font-weight:600;">'+trilhaLabel+'</div>'
+      +(isManual && autoKey && autoKey !== key ? '<span style="font-size:10px;color:var(--ink3);font-style:italic;">Auto: '+TRILHAS[autoKey].titulo.split('—')[0].trim()+'</span>' : '')
+    +'</div>'
     +'<div style="font-size:14px;font-weight:500;color:var(--ink);">'+t.titulo+'</div>'
     +'<div style="font-size:12px;color:var(--ink2);font-style:italic;margin-top:3px;">'+t.frase+'</div>'
     +'</div>';
+
+  // Select para tutora trocar a trilha
+  if(editor){
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
+      +'<span style="font-size:12px;color:var(--ink2);">Alterar trilha:</span>'
+      +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
+        +'<option value=""'+(isManual?'':' selected')+'>Automático (por data)</option>'
+        +'<option value="iniciante"'+(isManual && key==='iniciante'?' selected':'')+'>Iniciante</option>'
+        +'<option value="intermediario"'+(isManual && key==='intermediario'?' selected':'')+'>Intermediária</option>'
+        +'<option value="avancado"'+(isManual && key==='avancado'?' selected':'')+'>Avançada</option>'
+      +'</select>'
+    +'</div>';
+  }
 
   t.topicos.forEach(function(tp, ti){
     var checkKey = key+'_'+ti;
@@ -2173,6 +2195,22 @@ function renderPanelTrilha(idx){
   });
 
   el.innerHTML = html;
+
+  // Event listener para troca manual de trilha (tutora only)
+  var trilhaSelect = document.getElementById('pTrilhaManualSelect');
+  if(trilhaSelect){
+    trilhaSelect.addEventListener('change', function(){
+      var val = this.value || null;
+      if(!e.perfil) e.perfil = {};
+      e.perfil.trilha_manual = val;
+      saveEstagiario(e); persist(true);
+      renderPanelTrilha(idx);
+      renderAvaliacao(idx);
+      renderCards();
+      renderOverviewAll();
+    });
+  }
+
   el.querySelectorAll('input[type=checkbox]').forEach(function(cb){
     cb.addEventListener('change', function(){
       var estIdx = parseInt(this.dataset.est);
