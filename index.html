@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Forma+ · Formação que evolui</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -687,7 +688,12 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
     <!-- Content (shown when tutora) -->
     <div id="estagContent" style="display:none;">
-      <div class="ph"><h1>Acompanhamento <em>individual</em></h1><p>Toque no card para ver o perfil e adicionar observações.</p></div>
+      <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div><h1>Acompanhamento <em>individual</em></h1><p>Toque no card para ver o perfil e adicionar observações.</p></div>
+        <button id="btnExportExcel" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;margin-top:6px;white-space:nowrap;" title="Exportar resultados para Excel">
+          <span style="font-size:16px;">📊</span> Exportar Excel
+        </button>
+      </div>
       <div id="notionGrid"></div>
     </div>
 
@@ -1057,6 +1063,19 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 <!-- RENAME -->
 <div class="modal-ov" id="renameOv">
+
+<!-- EXPORT EXCEL MODAL -->
+<div class="login-ov" id="exportOv">
+  <div class="login-box" style="max-width:420px;">
+    <h3 style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px;">📊 Exportar Resultados</h3>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;">Selecione os trimestres que deseja incluir na planilha.</p>
+    <div id="exportTriCheckboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-cancel" id="btnCancelExport" style="margin:0;">Cancelar</button>
+      <button class="btn-login" id="btnConfirmExport" style="margin:0;padding:8px 20px;">Exportar</button>
+    </div>
+  </div>
+</div>
   <div class="modal-box">
     <h3>Renomear estagiário</h3>
     <input class="field-in" type="text" id="renameIn" maxlength="50" placeholder="Nome completo" style="margin-bottom:0;">
@@ -2094,7 +2113,7 @@ function renderPanelTrilha(idx){
 
   if(!key){
     var hFallback = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:4px 0;">Cadastre a data de início para identificar a trilha automaticamente.</div>';
-    if(editor){
+    if(editor || (modoGestor && gestorLogado)){
       hFallback += '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">'
         +'<span style="font-size:12px;color:var(--ink2);">Definir trilha manualmente:</span>'
         +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
@@ -2145,8 +2164,8 @@ function renderPanelTrilha(idx){
     +'<div style="font-size:12px;color:var(--ink2);font-style:italic;margin-top:3px;">'+t.frase+'</div>'
     +'</div>';
 
-  // Select para tutora trocar a trilha
-  if(editor){
+  // Select para tutora/gestor trocar a trilha
+  if(editor || (modoGestor && gestorLogado)){
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
       +'<span style="font-size:12px;color:var(--ink2);">Alterar trilha:</span>'
       +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
@@ -2761,6 +2780,96 @@ function applyMode(){
   renderOverviewAll();
 }
 
+// ── EXPORTAÇÃO EXCEL ───────────────────────────────────────────────────────
+function openExportModal(){
+  var ov = document.getElementById('exportOv');
+  if(!ov) return;
+  var container = document.getElementById('exportTriCheckboxes');
+  var tris = ultimosTrimestres();
+  container.innerHTML = tris.map(function(tri, i){
+    return '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);">'
+      +'<input type="checkbox" value="'+tri+'"'+(i===0?' checked':'')+' style="width:16px;height:16px;accent-color:var(--or);">'
+      +'<span style="font-size:14px;color:var(--ink);">'+fmtTrimestre(tri)+'</span>'
+      +'</label>';
+  }).join('');
+  ov.classList.add('open');
+}
+
+function closeExportModal(){
+  var ov = document.getElementById('exportOv');
+  if(ov) ov.classList.remove('open');
+}
+
+function exportToExcel(){
+  var container = document.getElementById('exportTriCheckboxes');
+  var checkedTris = [];
+  container.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb){
+    checkedTris.push(cb.value);
+  });
+  if(!checkedTris.length){ alert('Selecione ao menos um trimestre.'); return; }
+
+  // Determinar lista de estagiários (gestor vê só os seus, tutora vê todos)
+  var lista = S.ests;
+  if(modoGestor && gestorLogado){
+    var p = gestorLogado.permissoes || {};
+    if(!p.todos_estagiarios){
+      lista = S.ests.filter(function(e){
+        return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional;
+      });
+    }
+  }
+
+  if(!lista.length){ alert('Nenhum estagiário para exportar.'); return; }
+
+  // Montar cabeçalho
+  var header = ['Nome', 'Funcional', 'Tempo no programa', 'Trilha'];
+  checkedTris.forEach(function(tri){
+    var label = fmtTrimestre(tri);
+    header.push('Meta ('+label+')', 'Produção ('+label+')', '% Atingido ('+label+')');
+  });
+
+  // Montar dados
+  var rows = lista.map(function(e){
+    var trilhaKey = getEffectiveTrilhaKey(e);
+    var trilhaNome = trilhaKey ? {iniciante:'Iniciante',intermediario:'Intermediária',avancado:'Avançada'}[trilhaKey] : '—';
+    var tempo = (e.perfil && e.perfil.inicio) ? calcTempo(e.perfil.inicio) : '—';
+    var row = [
+      e.nome || '—',
+      (e.perfil && e.perfil.funcional) || '—',
+      tempo,
+      trilhaNome
+    ];
+    checkedTris.forEach(function(tri){
+      var prod = getProducaoTri(e.id, tri);
+      var meta = parseFloat(prod.meta)||0;
+      var producao = parseFloat(prod.producao)||0;
+      var pct = meta > 0 ? Math.round((producao/meta)*100) : 0;
+      row.push(meta, producao, pct + '%');
+    });
+    return row;
+  });
+
+  // Criar workbook
+  var wb = XLSX.utils.book_new();
+  var wsData = [header].concat(rows);
+  var ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Larguras das colunas
+  var colWidths = [{wch:25},{wch:12},{wch:18},{wch:16}];
+  checkedTris.forEach(function(){
+    colWidths.push({wch:16},{wch:16},{wch:14});
+  });
+  ws['!cols'] = colWidths;
+
+  var sheetName = editor ? 'Todos os Estagiários' : 'Meus Estagiários';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  // Gerar e baixar
+  var nomeArquivo = 'FormaPlus_Resultados_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  XLSX.writeFile(wb, nomeArquivo);
+  closeExportModal();
+}
+
 // ── EVENT LISTENERS ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
 
@@ -3104,6 +3213,12 @@ document.getElementById('btnObs').addEventListener('click', function(){
   });
   document.getElementById('btnCancelRename').addEventListener('click', function(){ document.getElementById('renameOv').classList.remove('open'); });
   document.getElementById('renameIn').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('btnConfirmRename').click(); if(e.key==='Escape') document.getElementById('renameOv').classList.remove('open'); });
+
+  // Export Excel
+  document.getElementById('btnExportExcel').addEventListener('click', openExportModal);
+  document.getElementById('btnCancelExport').addEventListener('click', closeExportModal);
+  document.getElementById('btnConfirmExport').addEventListener('click', exportToExcel);
+  document.getElementById('exportOv').addEventListener('click', function(ev){ if(ev.target === this) closeExportModal(); });
 
   // Init — load from Supabase
   loadFromDB();
