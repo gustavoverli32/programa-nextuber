@@ -729,6 +729,15 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <input class="field-in" type="date" id="cadInicio">
         </div>
         <div class="field-grp" style="grid-column:1/-1;"><div class="field-lbl">Funcional do gestor</div><input class="field-in" type="text" id="cadGestorFunc" placeholder="000000000" maxlength="9" inputmode="numeric"></div>
+        <div class="field-grp" style="grid-column:1/-1;">
+          <div class="field-lbl">Certificação</div>
+          <select class="field-in" id="cadCertificacao" style="cursor:pointer;">
+            <option value="">Nenhuma</option>
+            <option value="CPA">CPA</option>
+            <option value="C-PRO R">C-PRO R</option>
+            <option value="C-PRO I">C-PRO I</option>
+          </select>
+        </div>
       </div>
       <div class="cad-single-footer">
         <button class="btn-cad-add" id="cadAddBtn">+ Adicionar estagiário</button>
@@ -802,6 +811,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="prow"><span class="prow-lbl">Funcional</span><span class="prow-val" id="pFunc" style="font-family:monospace">—</span></div>
       <div class="prow"><span class="prow-lbl">Início</span><span class="prow-val" id="pInicio">—</span></div>
       <div class="prow"><span class="prow-lbl">Tempo no programa</span><span class="prow-val" id="pTempo">—</span></div>
+      <div class="prow"><span class="prow-lbl">Certificação</span><span class="prow-val" id="pCertificacao">—</span></div>
     </div>
     <div class="psec psec-full">
       <div class="psec-ttl">Trilha de aprendizado</div>
@@ -2271,6 +2281,7 @@ function renderCards(){
     var done=e.meses.filter(function(s){return s.indexOf('Concluído')>=0||s.indexOf('Renovado')>=0;}).length;
     var hasFn=e.perfil&&e.perfil.funcional;
     var t=e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null;
+    var cert=e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
     var score=calcScore(e);
     var dots=e.meses.map(function(s,i){
       var cls=i===ci?'curr':(dotCls(s)||'');
@@ -2281,6 +2292,7 @@ function renderCards(){
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
         +(t?'<span class="nc-chip">◷ '+t+'</span>':'')
+        +(cert?'<span class="nc-chip" style="background:#DBEAFE;color:#1E40AF;font-weight:600;">🏅 '+cert+'</span>':'')
         +(!hasFn&&!t?'<span class="nc-chip empty">Perfil não cadastrado</span>':'')
         +(e.atencao?'<span class="nc-atencao"><span class="nc-atencao-dot"></span>Atenção</span>':'')
       +'</div>'
@@ -2305,6 +2317,15 @@ function openPanel(idx){
   document.getElementById('pFunc').textContent=e.perfil&&e.perfil.funcional?e.perfil.funcional:'—';
   document.getElementById('pInicio').textContent=fmtDate(e.perfil&&e.perfil.inicio?e.perfil.inicio:'');
   document.getElementById('pTempo').textContent=(e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null)||'—';
+  var certVal = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
+  var certEl = document.getElementById('pCertificacao');
+  if(certEl){
+    if(certVal){
+      certEl.innerHTML = '<span style="background:#DBEAFE;color:#1E40AF;font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px;">🏅 '+certVal+'</span>';
+    } else {
+      certEl.textContent = '—';
+    }
+  }
   renderPanelTrilha(idx);
   updateAtencaoBtn(idx);
   renderAvaliacao(idx);
@@ -2489,6 +2510,8 @@ function loadEditCad(idx){
   document.getElementById('cadInicio').value = e.perfil&&e.perfil.inicio?e.perfil.inicio:'';
   var gfEl = document.getElementById('cadGestorFunc');
   if(gfEl) gfEl.value = e.perfil&&e.perfil.gestor_funcional?e.perfil.gestor_funcional:'';
+  var certEl = document.getElementById('cadCertificacao');
+  if(certEl) certEl.value = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:'';
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
@@ -2521,7 +2544,8 @@ async function savePerfil(){
     idade: document.getElementById('cadIdade').value,
     funcional: func,
     inicio: document.getElementById('cadInicio').value,
-    gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9)
+    gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9),
+    certificacao: document.getElementById('cadCertificacao').value || null
   };
   
   // Validate
@@ -2529,7 +2553,10 @@ async function savePerfil(){
   
   var estagiario;
   if(cadIdx >= 0){
-    // editing existing
+    // editing existing — preserve trilha_manual
+    if(S.ests[cadIdx].perfil && S.ests[cadIdx].perfil.trilha_manual){
+      perfil.trilha_manual = S.ests[cadIdx].perfil.trilha_manual;
+    }
     S.ests[cadIdx].nome = nome;
     S.ests[cadIdx].perfil = perfil;
     estagiario = S.ests[cadIdx];
@@ -2564,7 +2591,7 @@ async function savePerfil(){
   
   // reset form
   cadIdx = -1;
-  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc','cadCertificacao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
   document.getElementById('cadAv').textContent = '?';
   document.getElementById('cadAv').classList.remove('filled');
