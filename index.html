@@ -796,18 +796,15 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <span style="font-size:18px;">⏰</span>
-          <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin:0;">Recorrência de atualização de produção</h3>
+          <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin:0;">Prazo para atualização de produção</h3>
         </div>
-        <p style="font-size:12px;color:var(--ink3);margin:8px 0 14px;">Define o prazo máximo para os gestores atualizarem a produção dos estagiários. Quando o prazo vencer, o card do estagiário ficará destacado como alerta.</p>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <select id="cfgSelRecorrencia" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;flex:1;max-width:200px;">
-            <option value="15">A cada 15 dias</option>
-            <option value="20">A cada 20 dias</option>
-            <option value="30">A cada 30 dias</option>
-          </select>
-          <button class="btn-obs" id="btnCfgSalvarRecorrencia">Salvar</button>
-          <span class="obs-saved" id="cfgRecorrenciaSaved">✓ Salvo</span>
+        <p style="font-size:12px;color:var(--ink3);margin:8px 0 14px;">Defina a data limite para os gestores atualizarem a produção dos estagiários. Quando o prazo se aproximar (2 dias antes), os cards ficarão amarelos. No dia do vencimento, ficarão vermelhos.</p>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <input type="date" id="cfgPrazoData" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;">
+          <button class="btn-obs" id="btnCfgSalvarPrazo">Definir prazo</button>
+          <span class="obs-saved" id="cfgPrazoSaved">✓ Salvo</span>
         </div>
+        <div id="cfgPrazoAtual" style="margin-top:12px;font-size:12px;color:var(--ink3);"></div>
       </div>
 
       <!-- Placeholder para futuras configs -->
@@ -1773,25 +1770,21 @@ function isAniversario(e){
   return parseInt(nasc[1]) === (hoje.getMonth()+1) && parseInt(nasc[2]) === hoje.getDate();
 }
 
-function diasDesdeAtualizacao(e){
-  if(!e.perfil || !e.perfil.ultima_atualizacao_prod) return null;
-  var last = new Date(e.perfil.ultima_atualizacao_prod);
-  var now = new Date();
-  return Math.floor((now - last) / 86400000);
-}
-
-function getRecorrenciaProd(){
-  if(S.cfg && S.cfg.recorrencia_producao) return parseInt(S.cfg.recorrencia_producao);
-  return 30; // default 30 dias
-}
-
 function statusAtualizacao(e){
-  var rec = getRecorrenciaProd();
-  var dias = diasDesdeAtualizacao(e);
-  if(dias === null) return 'nunca'; // nunca atualizou
-  if(dias > rec) return 'atrasado';
-  if(dias > rec - 5) return 'alerta'; // 5 dias antes do vencimento
-  return 'ok';
+  if(!S.cfg || !S.cfg.prazo_producao) return 'ok';
+  var definidoEm = S.cfg.prazo_definido_em || '2000-01-01';
+  var hoje = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  var prazo = S.cfg.prazo_producao; // YYYY-MM-DD
+  // Se já atualizou produção DEPOIS que o prazo foi definido → ok
+  if(e.perfil && e.perfil.ultima_atualizacao_prod && e.perfil.ultima_atualizacao_prod >= definidoEm) return 'ok';
+  // Calcular dias até o prazo (comparação por string de data)
+  var prazoDt = new Date(prazo+'T00:00:00');
+  var hojeDt = new Date(hoje+'T00:00:00');
+  var diffDias = Math.round((prazoDt - hojeDt) / 86400000);
+  if(diffDias < 0) return 'atrasado'; // prazo já passou
+  if(diffDias === 0) return 'atrasado'; // é hoje, prazo vencendo
+  if(diffDias <= 2) return 'alerta'; // faltam 1-2 dias
+  return 'ok'; // ainda tem tempo
 }
 
 
@@ -2417,7 +2410,7 @@ function renderCards(){
     var cert=e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
     var bday=isAniversario(e);
     var updStatus=hasFn?statusAtualizacao(e):'ok';
-    var cardBorder = updStatus==='atrasado'?'border-left:4px solid #DC2626;':(updStatus==='nunca'?'border-left:4px solid #F59E0B;':(updStatus==='alerta'?'border-left:4px solid #F59E0B;':''));
+    var cardBorder = updStatus==='atrasado'?'border-left:4px solid #DC2626;':(updStatus==='alerta'?'border-left:4px solid #F59E0B;':'');
     var score=calcScore(e);
     var dots=e.meses.map(function(s,i){
       var cls=i===ci?'curr':(dotCls(s)||'');
@@ -2429,8 +2422,8 @@ function renderCards(){
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
         +(t?'<span class="nc-chip">◷ '+t+'</span>':'')
         +(cert?'<span class="nc-chip" style="background:#DBEAFE;color:#1E40AF;font-weight:600;">🏅 '+cert+'</span>':'')
-        +(updStatus==='atrasado'?'<span class="nc-chip" style="background:#FEE2E2;color:#DC2626;font-weight:600;">⚠ Produção atrasada</span>':'')
-        +(updStatus==='nunca'&&hasFn?'<span class="nc-chip" style="background:#FEF3C7;color:#92400E;font-weight:600;">⏳ Sem produção</span>':'')
+        +(updStatus==='atrasado'?'<span class="nc-chip" style="background:#FEE2E2;color:#DC2626;font-weight:600;">⚠ Prazo vencido</span>':'')
+        +(updStatus==='alerta'?'<span class="nc-chip" style="background:#FEF3C7;color:#92400E;font-weight:600;">⏳ Prazo próximo</span>':'')
         +(!hasFn&&!t?'<span class="nc-chip empty">Perfil não cadastrado</span>':'')
         +(e.atencao?'<span class="nc-atencao"><span class="nc-atencao-dot"></span>Atenção</span>':'')
       +'</div>'
@@ -2477,12 +2470,15 @@ function openPanel(idx){
   var updEl = document.getElementById('pUltimaAtualizacao');
   if(updEl){
     var updVal = e.perfil&&e.perfil.ultima_atualizacao_prod?e.perfil.ultima_atualizacao_prod:null;
+    var st = statusAtualizacao(e);
     if(updVal){
-      var st = statusAtualizacao(e);
-      var dias = diasDesdeAtualizacao(e);
-      var cor = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'#16A34A');
-      updEl.innerHTML = fmtDate(updVal)+' <span style="color:'+cor+';font-size:11px;font-weight:600;">('+dias+' dias atrás)</span>';
-    } else { updEl.innerHTML = '<span style="color:#F59E0B;font-size:12px;">⏳ Nunca atualizado</span>'; }
+      var corSt = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'#16A34A');
+      var lblSt = st==='atrasado'?' (prazo vencido)':(st==='alerta'?' (prazo próximo)':' (em dia)');
+      updEl.innerHTML = fmtDate(updVal)+' <span style="color:'+corSt+';font-size:11px;font-weight:600;">'+lblSt+'</span>';
+    } else if(S.cfg && S.cfg.prazo_producao){
+      var corSt2 = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'var(--ink3)');
+      updEl.innerHTML = '<span style="color:'+corSt2+';font-size:12px;">Ainda não atualizada</span>';
+    } else { updEl.textContent = '—'; }
   }
   renderPanelTrilha(idx);
   updateAtencaoBtn(idx);
@@ -3334,16 +3330,34 @@ document.getElementById('btnObs').addEventListener('click', function(){
     document.getElementById('projetoOv').classList.remove('open');
   });
 
-  // Configurações — recorrência de produção
-  var cfgSelRec = document.getElementById('cfgSelRecorrencia');
-  if(cfgSelRec) cfgSelRec.value = getRecorrenciaProd();
-  var btnCfgRec = document.getElementById('btnCfgSalvarRecorrencia');
-  if(btnCfgRec) btnCfgRec.addEventListener('click', async function(){
-    var val = document.getElementById('cfgSelRecorrencia').value;
-    S.cfg.recorrencia_producao = parseInt(val);
+  // Configurações — prazo de produção por data
+  var cfgPrazoInput = document.getElementById('cfgPrazoData');
+  if(cfgPrazoInput && S.cfg && S.cfg.prazo_producao) cfgPrazoInput.value = S.cfg.prazo_producao;
+  // Mostrar prazo atual
+  function renderPrazoAtual(){
+    var el = document.getElementById('cfgPrazoAtual');
+    if(!el) return;
+    if(S.cfg && S.cfg.prazo_producao){
+      var d = new Date(S.cfg.prazo_producao+'T12:00:00');
+      var hoje = new Date();
+      var diff = Math.ceil((d - hoje) / 86400000);
+      var status = diff > 2 ? '🟢 Dentro do prazo' : (diff > 0 ? '🟡 Prazo próximo ('+diff+' dias)' : '🔴 Prazo vencido');
+      el.innerHTML = '📅 Prazo atual: <strong>'+fmtDate(S.cfg.prazo_producao)+'</strong> — '+status;
+    } else {
+      el.innerHTML = 'Nenhum prazo definido ainda.';
+    }
+  }
+  renderPrazoAtual();
+  var btnCfgPrazo = document.getElementById('btnCfgSalvarPrazo');
+  if(btnCfgPrazo) btnCfgPrazo.addEventListener('click', async function(){
+    var val = document.getElementById('cfgPrazoData').value;
+    if(!val){ alert('Selecione uma data.'); return; }
+    S.cfg.prazo_producao = val;
+    S.cfg.prazo_definido_em = new Date().toISOString().slice(0,10);
     await sb.from('configuracoes').upsert({id:'cfg_geral', valor:JSON.parse(JSON.stringify(S.cfg))});
-    var sv = document.getElementById('cfgRecorrenciaSaved');
+    var sv = document.getElementById('cfgPrazoSaved');
     if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
+    renderPrazoAtual();
     renderCards();
   });
 
