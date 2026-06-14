@@ -536,6 +536,10 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div class="nav-lbl">Programa</div>
     <div class="nav-item" data-page="trilhas" data-tutora="only">◑ Trilhas</div>
   </div>
+  <div class="nav-section" data-tutora="only">
+    <div class="nav-lbl">Sistema</div>
+    <div class="nav-item" data-page="configuracoes" data-tutora="only">⚙ Configurações</div>
+  </div>
   <div class="sb-progress" data-tutora="only">
     <div class="sb-progress-row"><span>PROGRESSO</span><span id="pctLbl">0%</span></div>
     <div class="sb-track"><div class="sb-fill" id="pctFill" style="width:0%"></div></div>
@@ -580,6 +584,11 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="drawer-item" data-page="trilhas" data-tutora="only">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="18" r="2.5"/></svg>
         Trilhas
+      </div>
+      <div class="drawer-section-lbl" data-tutora="only">Sistema</div>
+      <div class="drawer-item" data-page="configuracoes" data-tutora="only">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8l2.8-2.8M17 7l2.8-2.8"/></svg>
+        Configurações
       </div>
       </div>
     <div class="drawer-footer">
@@ -778,6 +787,36 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div id="trilhaContent"></div>
   </section>
 
+  <!-- CONFIGURAÇÕES -->
+  <section id="page-configuracoes" class="page">
+    <div class="ph"><h1>Configurações</h1><p>Ajustes gerais do programa Nextuber.</p></div>
+    
+    <div style="max-width:600px;">
+      <!-- Recorrência de produção -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:18px;">⏰</span>
+          <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin:0;">Recorrência de atualização de produção</h3>
+        </div>
+        <p style="font-size:12px;color:var(--ink3);margin:8px 0 14px;">Define o prazo máximo para os gestores atualizarem a produção dos estagiários. Quando o prazo vencer, o card do estagiário ficará destacado como alerta.</p>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <select id="cfgSelRecorrencia" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;flex:1;max-width:200px;">
+            <option value="15">A cada 15 dias</option>
+            <option value="20">A cada 20 dias</option>
+            <option value="30">A cada 30 dias</option>
+          </select>
+          <button class="btn-obs" id="btnCfgSalvarRecorrencia">Salvar</button>
+          <span class="obs-saved" id="cfgRecorrenciaSaved">✓ Salvo</span>
+        </div>
+      </div>
+
+      <!-- Placeholder para futuras configs -->
+      <div style="background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--ink3);font-size:13px;">
+        Mais configurações em breve.
+      </div>
+    </div>
+  </section>
+
 </main>
 </div>
 
@@ -945,20 +984,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div>
         <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">📊 Acompanhamento</div>
         <p id="secAcomp">—</p>
-      </div>
-    </div>
-
-    <div id="cfgRecorrencia" style="display:none;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">⏰ Recorrência de atualização de produção</div>
-      <p style="font-size:12px;color:var(--ink3);margin-bottom:10px;">Quando a produção do estagiário não for atualizada no prazo, o card ficará destacado como alerta.</p>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <select id="selRecorrencia" style="font-size:13px;border:1px solid var(--border2);border-radius:6px;padding:6px 12px;background:var(--surface);color:var(--ink);cursor:pointer;">
-          <option value="15">A cada 15 dias</option>
-          <option value="20">A cada 20 dias</option>
-          <option value="30">A cada 30 dias</option>
-        </select>
-        <button class="btn-obs" id="btnSalvarRecorrencia">Salvar</button>
-        <span class="obs-saved" id="recorrenciaSaved">✓ Salvo</span>
       </div>
     </div>
 
@@ -2776,7 +2801,7 @@ function renderTrilha(){
 function goPage(id){
   // Bloqueio de acesso por permissão
   // Cadastro e descricao são SÓ TUTORA — gestor nunca acessa
-  var paginasSoTutora = ['cadastro'];
+  var paginasSoTutora = ['cadastro','configuracoes'];
   if(paginasSoTutora.indexOf(id) >= 0 && !editor){
     id = 'overview';
   }
@@ -3303,30 +3328,21 @@ document.getElementById('btnObs').addEventListener('click', function(){
   var btnVm = document.getElementById('btnVerMaisProjeto');
   if(btnVm) btnVm.addEventListener('click', function(){
     document.getElementById('projetoOv').classList.add('open');
-    // Mostrar config de recorrência apenas para tutora
-    var cfgDiv = document.getElementById('cfgRecorrencia');
-    if(cfgDiv){
-      if(editor){
-        cfgDiv.style.display = 'block';
-        var sel = document.getElementById('selRecorrencia');
-        if(sel) sel.value = getRecorrenciaProd();
-      } else {
-        cfgDiv.style.display = 'none';
-      }
-    }
   });
   var btnFp = document.getElementById('btnFecharProjeto');
   if(btnFp) btnFp.addEventListener('click', function(){
     document.getElementById('projetoOv').classList.remove('open');
   });
 
-  // Salvar recorrência de produção (tutora only)
-  var btnSalvarRec = document.getElementById('btnSalvarRecorrencia');
-  if(btnSalvarRec) btnSalvarRec.addEventListener('click', async function(){
-    var val = document.getElementById('selRecorrencia').value;
+  // Configurações — recorrência de produção
+  var cfgSelRec = document.getElementById('cfgSelRecorrencia');
+  if(cfgSelRec) cfgSelRec.value = getRecorrenciaProd();
+  var btnCfgRec = document.getElementById('btnCfgSalvarRecorrencia');
+  if(btnCfgRec) btnCfgRec.addEventListener('click', async function(){
+    var val = document.getElementById('cfgSelRecorrencia').value;
     S.cfg.recorrencia_producao = parseInt(val);
     await sb.from('configuracoes').upsert({id:'cfg_geral', valor:JSON.parse(JSON.stringify(S.cfg))});
-    var sv = document.getElementById('recorrenciaSaved');
+    var sv = document.getElementById('cfgRecorrenciaSaved');
     if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
     renderCards();
   });
