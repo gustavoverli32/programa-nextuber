@@ -722,6 +722,10 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
             <option value="C-PRO I">C-PRO I</option>
           </select>
         </div>
+        <div class="field-grp" style="grid-column:1/-1;">
+          <div class="field-lbl">Data de nascimento</div>
+          <input class="field-in" type="date" id="cadNascimento">
+        </div>
       </div>
       <div class="cad-single-footer">
         <button class="btn-cad-add" id="cadAddBtn">+ Adicionar estagiário</button>
@@ -796,6 +800,8 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="prow"><span class="prow-lbl">Início</span><span class="prow-val" id="pInicio">—</span></div>
       <div class="prow"><span class="prow-lbl">Tempo no programa</span><span class="prow-val" id="pTempo">—</span></div>
       <div class="prow"><span class="prow-lbl">Certificação</span><span class="prow-val" id="pCertificacao">—</span></div>
+      <div class="prow"><span class="prow-lbl">Nascimento</span><span class="prow-val" id="pNascimento">—</span></div>
+      <div class="prow"><span class="prow-lbl">Última atualização de produção</span><span class="prow-val" id="pUltimaAtualizacao">—</span></div>
     </div>
     <div class="psec psec-full">
       <div class="psec-ttl">Trilha de aprendizado</div>
@@ -939,6 +945,20 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div>
         <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">📊 Acompanhamento</div>
         <p id="secAcomp">—</p>
+      </div>
+    </div>
+
+    <div id="cfgRecorrencia" style="display:none;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">⏰ Recorrência de atualização de produção</div>
+      <p style="font-size:12px;color:var(--ink3);margin-bottom:10px;">Quando a produção do estagiário não for atualizada no prazo, o card ficará destacado como alerta.</p>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <select id="selRecorrencia" style="font-size:13px;border:1px solid var(--border2);border-radius:6px;padding:6px 12px;background:var(--surface);color:var(--ink);cursor:pointer;">
+          <option value="15">A cada 15 dias</option>
+          <option value="20">A cada 20 dias</option>
+          <option value="30">A cada 30 dias</option>
+        </select>
+        <button class="btn-obs" id="btnSalvarRecorrencia">Salvar</button>
+        <span class="obs-saved" id="recorrenciaSaved">✓ Salvo</span>
       </div>
     </div>
 
@@ -1276,6 +1296,33 @@ function trimestreRef(){return anoAtual()+'-'+trimestreAtual();}
 function fmtTrimestre(t){if(!t)return'—';var p=t.split('-');return p[1].replace('Q','')+'º Tri '+p[0];}
 function ultimosTrimestres(){var r=[],d=new Date(),a=d.getFullYear(),q=Math.floor(d.getMonth()/3)+1;for(var i=0;i<6;i++){r.push(a+'-Q'+q);q--;if(q<1){q=4;a--;}}return r;}
 function getProducaoTri(eid,tri){if(!S.producao)return{meta:0,producao:0};return S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===tri;})||{meta:0,producao:0};}
+
+function getMesesTrimestre(tri){
+  var parts=tri.split('-'), y=parts[0], t=parseInt(parts[1].replace('Q','').replace('T',''));
+  var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var start=(t-1)*3;
+  return [{nome:meses[start],idx:1},{nome:meses[start+1],idx:2},{nome:meses[start+2],idx:3}];
+}
+
+function getProducaoMensal(eid,tri,mesIdx){
+  var ref=tri+'-M'+mesIdx;
+  if(!S.producao) return 0;
+  var row=S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
+  return row ? (parseFloat(row.producao)||0) : 0;
+}
+
+function getTotalMensal(eid,tri){
+  return getProducaoMensal(eid,tri,1)+getProducaoMensal(eid,tri,2)+getProducaoMensal(eid,tri,3);
+}
+
+async function saveProducaoMensal(eid,tri,mesIdx,valor){
+  var ref=tri+'-M'+mesIdx;
+  var r=await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:ref,meta:0,producao:valor},{onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i=S.producao.findIndex(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
+    if(i>=0) S.producao[i]=r.data; else S.producao.push(r.data);
+  }
+}
 function calcPctChecks(e){var tot=0,done=0;['iniciante','intermediario','avancado'].forEach(function(tk){if(TRILHAS[tk])TRILHAS[tk].topicos.forEach(function(tp,ti){var ck=tk+'_'+ti,chk=(e.trilhaChecks&&e.trilhaChecks[ck])||Array(tp.checks.length).fill(false);tot+=tp.checks.length;done+=chk.filter(Boolean).length;});});return tot>0?Math.round((done/tot)*100):0;}
 function faixaComp(p){if(p>=75)return{cor:'#16A34A',bg:'#DCFCE7',label:'Acima do esperado'};if(p>=40)return{cor:'#EC7000',bg:'#FFF3E8',label:'Esperado'};return{cor:'#DC2626',bg:'#FEE2E2',label:'Precisa melhorar'};}
 function faixaRes(p){if(p>=85)return{cor:'#16A34A',bg:'#DCFCE7',label:'Meta atingida'};if(p>=50)return{cor:'#EC7000',bg:'#FFF3E8',label:'Em desenvolvimento'};return{cor:'#DC2626',bg:'#FEE2E2',label:'Abaixo da meta'};}
@@ -1288,7 +1335,7 @@ async function hashSenha(senha) {
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], feedbacks:[], descricao:[], encontros:[] };
+var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], feedbacks:[], descricao:[], encontros:[], cfg:{} };
 var DB_LOADED = false;
 
 var TEXTOS_PROJETO_DEFAULT = {
@@ -1355,6 +1402,10 @@ async function loadFromDB(){
     // Load timeline — use maybeSingle to avoid error when row doesn't exist
     var r3 = await sb.from('configuracoes').select('*').eq('id','timeline').maybeSingle();
     if(r3.data && r3.data.valor) S.tl = r3.data.valor;
+
+    // Load cfg (recorrência de produção)
+    var rCfg = await sb.from('configuracoes').select('*').eq('id','cfg_geral').maybeSingle();
+    if(rCfg.data && rCfg.data.valor) S.cfg = rCfg.data.valor;
 
     // Load gestores
     var rG = await sb.from('gestores').select('*').order('nome');
@@ -1649,7 +1700,9 @@ function calcScore(e, triRef){
   var notaC = (pctC/100) * 4;
   // Resultados — 60% (0-6 pts)
   var prod = getProducaoTri(e.id, triRef);
-  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
+  var meta = parseFloat(prod.meta)||0;
+  var totalMensal = getTotalMensal(e.id, triRef);
+  var producao = totalMensal > 0 ? totalMensal : (parseFloat(prod.producao)||0);
   var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
   var notaR = pctR * 6;
   return Math.min(Math.round((notaC+notaR)*10)/10, 10);
@@ -1686,6 +1739,34 @@ function getTrilhaCor(key){
 function getEffectiveTrilhaKey(e){
   if(e.perfil && e.perfil.trilha_manual) return e.perfil.trilha_manual;
   return (e.perfil && e.perfil.inicio) ? getTrilhaKey(e.perfil.inicio) : null;
+}
+
+function isAniversario(e){
+  if(!e.perfil || !e.perfil.nascimento) return false;
+  var nasc = e.perfil.nascimento.split('-');
+  var hoje = new Date();
+  return parseInt(nasc[1]) === (hoje.getMonth()+1) && parseInt(nasc[2]) === hoje.getDate();
+}
+
+function diasDesdeAtualizacao(e){
+  if(!e.perfil || !e.perfil.ultima_atualizacao_prod) return null;
+  var last = new Date(e.perfil.ultima_atualizacao_prod);
+  var now = new Date();
+  return Math.floor((now - last) / 86400000);
+}
+
+function getRecorrenciaProd(){
+  if(S.cfg && S.cfg.recorrencia_producao) return parseInt(S.cfg.recorrencia_producao);
+  return 30; // default 30 dias
+}
+
+function statusAtualizacao(e){
+  var rec = getRecorrenciaProd();
+  var dias = diasDesdeAtualizacao(e);
+  if(dias === null) return 'nunca'; // nunca atualizou
+  if(dias > rec) return 'atrasado';
+  if(dias > rec - 5) return 'alerta'; // 5 dias antes do vencimento
+  return 'ok';
 }
 
 
@@ -1908,7 +1989,9 @@ async function salvarSnapshot(eid, tri){
   if(!e) return;
   var pct = calcPctChecks(e);
   var prod = getProducaoTri(eid, tri);
-  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
+  var meta = parseFloat(prod.meta)||0;
+  var totalMes = getTotalMensal(eid, tri);
+  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
   var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
   var st = Math.round((pct/100)*4*10)/10;
   var sr = Math.round(pctR*6*10)/10;
@@ -1948,7 +2031,9 @@ function renderAvaliacao(idx){
   var e = S.ests[idx], tri = trimestreRef();
   var pctC = calcPctChecks(e), fc = faixaComp(pctC);
   var prod = getProducaoTri(e.id, tri);
-  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
+  var meta = parseFloat(prod.meta)||0;
+  var totalMes = getTotalMensal(e.id, tri);
+  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
   var pctR = meta>0 ? Math.round(Math.min(producao/meta, 1)*100) : 0;
   var fr = faixaRes(pctR);
   var nota = calcScore(e, tri), nc = scoreColor(nota);
@@ -2053,26 +2138,40 @@ function renderResultadosForTri(idx, tri){
   var el = document.getElementById('pResultados'); if(!el) return;
   var e = S.ests[idx];
   var prod = getProducaoTri(e.id, tri);
-  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
-  var pct = meta>0 ? Math.round(Math.min(producao/meta, 1)*100) : 0;
+  var meta = parseFloat(prod.meta)||0;
+  var meses = getMesesTrimestre(tri);
+  var m1=getProducaoMensal(e.id,tri,1), m2=getProducaoMensal(e.id,tri,2), m3=getProducaoMensal(e.id,tri,3);
+  var totalProd = m1+m2+m3;
+  // Fallback: if no monthly data but old producao exists, show old total
+  if(totalProd===0 && parseFloat(prod.producao)>0) totalProd=parseFloat(prod.producao);
+  var pct = meta>0 ? Math.round(Math.min(totalProd/meta, 1)*100) : 0;
   var fr = faixaRes(pct);
   var canEdit = (editor || (modoGestor && gestorLogado));
   
-  el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
-    +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Meta</div><div style="font-size:14px;font-weight:500;">'+fmtMilhar(meta)+'</div></div>'
-    +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Produção</div><div style="font-size:14px;font-weight:500;color:'+(producao>0?fr.cor:'var(--ink3)')+';">'+fmtMilhar(producao)+'</div></div>'
+  var h = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
+    +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Meta trimestral</div><div style="font-size:14px;font-weight:500;">'+fmtMilhar(meta)+'</div></div>'
+    +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Total produzido</div><div style="font-size:14px;font-weight:500;color:'+(totalProd>0?fr.cor:'var(--ink3)')+';">'+fmtMilhar(totalProd)+'</div></div>'
     +'<div style="background:'+fr.bg+';border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:'+fr.cor+';margin-bottom:3px;">Atingido</div><div style="font-size:14px;font-weight:500;color:'+fr.cor+';">'+(meta>0?pct+'%':'—')+'</div></div>'
     +'</div>'
-    +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:12px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>'
-    +(canEdit ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
-      +'<div class="field-grp"><div class="field-lbl">Meta</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'<div class="field-grp"><div class="field-lbl">Produção</div><input class="field-in" type="text" id="pProdInput" value="'+(producao?fmtMilhar(producao):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'</div><div style="display:flex;align-items:center;gap:8px;"><button class="btn-obs" id="btnSalvarResultado">Salvar</button><span class="obs-saved" id="resultadoSaved">✓ Salvo</span></div>' : '')
-    +'<div id="pHistoricoTri"></div>';
+    +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:12px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
+
+  if(canEdit){
+    h += '<div class="field-grp" style="margin-bottom:10px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
+      +'<div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Produção mensal</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
+      +'<div class="field-grp"><div class="field-lbl">'+meses[0].nome+'</div><input class="field-in pMesInput" data-mes="1" type="text" value="'+(m1?fmtMilhar(m1):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
+      +'<div class="field-grp"><div class="field-lbl">'+meses[1].nome+'</div><input class="field-in pMesInput" data-mes="2" type="text" value="'+(m2?fmtMilhar(m2):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
+      +'<div class="field-grp"><div class="field-lbl">'+meses[2].nome+'</div><input class="field-in pMesInput" data-mes="3" type="text" value="'+(m3?fmtMilhar(m3):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;"><button class="btn-obs" id="btnSalvarResultado">Salvar</button><span class="obs-saved" id="resultadoSaved">✓ Salvo</span></div>';
+  }
+  h += '<div id="pHistoricoTri"></div>';
+  el.innerHTML = h;
   
   loadSnapshotsHistory(e.id);
-  // Auto-format inputs with thousands separator
-  ['pMetaInput','pProdInput'].forEach(function(id){
+  // Auto-format all numeric inputs
+  ['pMetaInput'].concat(Array.from(document.querySelectorAll('.pMesInput')).map(function(el){return null;})).forEach(function(id){
+    if(!id) return;
     var inp = document.getElementById(id);
     if(!inp) return;
     inp.addEventListener('input', function(){
@@ -2080,13 +2179,38 @@ function renderResultadosForTri(idx, tri){
       this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
     });
   });
+  document.querySelectorAll('.pMesInput').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var v = this.value.replace(/[^0-9]/g,'');
+      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
+    });
+  });
+  var metaInp = document.getElementById('pMetaInput');
+  if(metaInp){
+    metaInp.addEventListener('input', function(){
+      var v = this.value.replace(/[^0-9]/g,'');
+      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
+    });
+  }
+
   var btn = document.getElementById('btnSalvarResultado');
   if(btn){
     btn.addEventListener('click', async function(){
-      var m = parseMilhar((document.getElementById('pMetaInput')||{}).value)||meta;
-      var p = parseMilhar((document.getElementById('pProdInput')||{}).value)||producao;
-      await saveMetaTri(e.id, tri, m);
-      await saveProducaoTri(e.id, tri, p);
+      var newMeta = parseMilhar((document.getElementById('pMetaInput')||{}).value)||0;
+      await saveMetaTri(e.id, tri, newMeta);
+      var mesInputs = document.querySelectorAll('.pMesInput');
+      var total = 0;
+      for(var i=0;i<mesInputs.length;i++){
+        var val = parseMilhar(mesInputs[i].value)||0;
+        var mesIdx = parseInt(mesInputs[i].getAttribute('data-mes'));
+        await saveProducaoMensal(e.id, tri, mesIdx, val);
+        total += val;
+      }
+      await saveProducaoTri(e.id, tri, total);
+      // Atualizar timestamp de última atualização de produção
+      if(!e.perfil) e.perfil = {};
+      e.perfil.ultima_atualizacao_prod = new Date().toISOString().slice(0,10);
+      await saveEstagiario(e);
       await salvarSnapshot(e.id, tri);
       var sv = document.getElementById('resultadoSaved');
       if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
@@ -2266,17 +2390,22 @@ function renderCards(){
     var hasFn=e.perfil&&e.perfil.funcional;
     var t=e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null;
     var cert=e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
+    var bday=isAniversario(e);
+    var updStatus=hasFn?statusAtualizacao(e):'ok';
+    var cardBorder = updStatus==='atrasado'?'border-left:4px solid #DC2626;':(updStatus==='nunca'?'border-left:4px solid #F59E0B;':(updStatus==='alerta'?'border-left:4px solid #F59E0B;':''));
     var score=calcScore(e);
     var dots=e.meses.map(function(s,i){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
-    return '<div class="notion-card'+(panelIdx===ei?' nc-active':'')+'" data-ei="'+ei+'">'
-      +'<div class="nc-top"><div class="nc-avatar">'+ini(e.nome)+'</div><div class="nc-name">'+e.nome+'</div><span class="nc-arrow">→</span></div>'
+    return '<div class="notion-card'+(panelIdx===ei?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
+      +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
         +(t?'<span class="nc-chip">◷ '+t+'</span>':'')
         +(cert?'<span class="nc-chip" style="background:#DBEAFE;color:#1E40AF;font-weight:600;">🏅 '+cert+'</span>':'')
+        +(updStatus==='atrasado'?'<span class="nc-chip" style="background:#FEE2E2;color:#DC2626;font-weight:600;">⚠ Produção atrasada</span>':'')
+        +(updStatus==='nunca'&&hasFn?'<span class="nc-chip" style="background:#FEF3C7;color:#92400E;font-weight:600;">⏳ Sem produção</span>':'')
         +(!hasFn&&!t?'<span class="nc-chip empty">Perfil não cadastrado</span>':'')
         +(e.atencao?'<span class="nc-atencao"><span class="nc-atencao-dot"></span>Atenção</span>':'')
       +'</div>'
@@ -2309,6 +2438,26 @@ function openPanel(idx){
     } else {
       certEl.textContent = '—';
     }
+  }
+  // Nascimento
+  var nascEl = document.getElementById('pNascimento');
+  if(nascEl){
+    var nascVal = e.perfil&&e.perfil.nascimento?e.perfil.nascimento:null;
+    if(nascVal){
+      var bday = isAniversario(e);
+      nascEl.innerHTML = fmtDate(nascVal) + (bday?' <span style="font-size:12px;">🎂 Aniversário hoje!</span>':'');
+    } else { nascEl.textContent = '—'; }
+  }
+  // Última atualização de produção
+  var updEl = document.getElementById('pUltimaAtualizacao');
+  if(updEl){
+    var updVal = e.perfil&&e.perfil.ultima_atualizacao_prod?e.perfil.ultima_atualizacao_prod:null;
+    if(updVal){
+      var st = statusAtualizacao(e);
+      var dias = diasDesdeAtualizacao(e);
+      var cor = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'#16A34A');
+      updEl.innerHTML = fmtDate(updVal)+' <span style="color:'+cor+';font-size:11px;font-weight:600;">('+dias+' dias atrás)</span>';
+    } else { updEl.innerHTML = '<span style="color:#F59E0B;font-size:12px;">⏳ Nunca atualizado</span>'; }
   }
   renderPanelTrilha(idx);
   updateAtencaoBtn(idx);
@@ -2496,6 +2645,8 @@ function loadEditCad(idx){
   if(gfEl) gfEl.value = e.perfil&&e.perfil.gestor_funcional?e.perfil.gestor_funcional:'';
   var certEl = document.getElementById('cadCertificacao');
   if(certEl) certEl.value = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:'';
+  var nascEl = document.getElementById('cadNascimento');
+  if(nascEl) nascEl.value = e.perfil&&e.perfil.nascimento?e.perfil.nascimento:'';
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
@@ -2529,7 +2680,8 @@ async function savePerfil(){
     funcional: func,
     inicio: document.getElementById('cadInicio').value,
     gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9),
-    certificacao: document.getElementById('cadCertificacao').value || null
+    certificacao: document.getElementById('cadCertificacao').value || null,
+    nascimento: document.getElementById('cadNascimento').value || null
   };
   
   // Validate
@@ -2537,9 +2689,12 @@ async function savePerfil(){
   
   var estagiario;
   if(cadIdx >= 0){
-    // editing existing — preserve trilha_manual
+    // editing existing — preserve trilha_manual and ultima_atualizacao_prod
     if(S.ests[cadIdx].perfil && S.ests[cadIdx].perfil.trilha_manual){
       perfil.trilha_manual = S.ests[cadIdx].perfil.trilha_manual;
+    }
+    if(S.ests[cadIdx].perfil && S.ests[cadIdx].perfil.ultima_atualizacao_prod){
+      perfil.ultima_atualizacao_prod = S.ests[cadIdx].perfil.ultima_atualizacao_prod;
     }
     S.ests[cadIdx].nome = nome;
     S.ests[cadIdx].perfil = perfil;
@@ -2575,7 +2730,7 @@ async function savePerfil(){
   
   // reset form
   cadIdx = -1;
-  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc','cadCertificacao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc','cadCertificacao','cadNascimento'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
   document.getElementById('cadAv').textContent = '?';
   document.getElementById('cadAv').classList.remove('filled');
@@ -2855,7 +3010,8 @@ function exportToExcel(){
     checkedTris.forEach(function(tri){
       var prod = getProducaoTri(e.id, tri);
       var meta = parseFloat(prod.meta)||0;
-      var producao = parseFloat(prod.producao)||0;
+      var totalMes = getTotalMensal(e.id, tri);
+      var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
       var pct = meta > 0 ? Math.round((producao/meta)*100) : 0;
       row.push(meta, producao, pct + '%');
     });
@@ -3147,10 +3303,32 @@ document.getElementById('btnObs').addEventListener('click', function(){
   var btnVm = document.getElementById('btnVerMaisProjeto');
   if(btnVm) btnVm.addEventListener('click', function(){
     document.getElementById('projetoOv').classList.add('open');
+    // Mostrar config de recorrência apenas para tutora
+    var cfgDiv = document.getElementById('cfgRecorrencia');
+    if(cfgDiv){
+      if(editor){
+        cfgDiv.style.display = 'block';
+        var sel = document.getElementById('selRecorrencia');
+        if(sel) sel.value = getRecorrenciaProd();
+      } else {
+        cfgDiv.style.display = 'none';
+      }
+    }
   });
   var btnFp = document.getElementById('btnFecharProjeto');
   if(btnFp) btnFp.addEventListener('click', function(){
     document.getElementById('projetoOv').classList.remove('open');
+  });
+
+  // Salvar recorrência de produção (tutora only)
+  var btnSalvarRec = document.getElementById('btnSalvarRecorrencia');
+  if(btnSalvarRec) btnSalvarRec.addEventListener('click', async function(){
+    var val = document.getElementById('selRecorrencia').value;
+    S.cfg.recorrencia_producao = parseInt(val);
+    await sb.from('configuracoes').upsert({id:'cfg_geral', valor:JSON.parse(JSON.stringify(S.cfg))});
+    var sv = document.getElementById('recorrenciaSaved');
+    if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
+    renderCards();
   });
 
   // Encontros
