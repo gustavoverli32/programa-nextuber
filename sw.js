@@ -1,6 +1,6 @@
 const CACHE_NAME = 'nextuber-v1';
 const ASSETS = [
-  './formaplus_2_0.html',
+  './index.html',
   './manifest.json',
   './pwa-icons/icon-192x192.png',
   './pwa-icons/icon-512x512.png'
