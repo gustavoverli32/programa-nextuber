@@ -2,7 +2,7 @@
   "name": "Nextuber — A próxima geração de Itubers",
   "short_name": "Nextuber",
   "description": "Plataforma de formação e acompanhamento de estagiários comerciais do Itaú Unibanco.",
-  "start_url": "./programa-nextuber/",
+  "start_url": "./index.html/",
   "scope": "/progrma-nextuber/",
   "display": "standalone",
   "background_color": "#1A1A2E",
