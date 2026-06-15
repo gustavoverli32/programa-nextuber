@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#EC7000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nextuber">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="pwa-icons/apple-touch-icon.png">
 <title>Nextuber · A próxima geração de Itubers</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -3557,4 +3563,13 @@ document.addEventListener('click', function(ev){
 
 </script>
 </body>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then(function(r) {
+    console.log('Nextuber PWA registrado');
+  }).catch(function(e) {
+    console.log('SW erro:', e);
+  });
+}
+</script>
 </html>
