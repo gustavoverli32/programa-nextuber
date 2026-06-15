@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nextuber-v1';
+const CACHE_NAME = 'nextuber-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
