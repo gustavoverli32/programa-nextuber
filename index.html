@@ -536,7 +536,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div class="nav-lbl">Painel</div>
     <div class="nav-item active" data-page="overview">◈ Página inicial</div>
     <div class="nav-item" data-page="estagiarios" data-tutora="only">◎ Acompanhamento</div>
-    <div class="nav-item" data-page="cadastro" data-tutora="only">◫ Cadastro</div>
+    <div class="nav-item" data-page="cadastro" data-tutora="only" data-gga="show">◫ Cadastro</div>
   </div>
   <div class="nav-section">
     <div class="nav-lbl">Programa</div>
@@ -582,7 +582,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
         <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3.5"/><path d="M2 20c0-4 3.1-7 7-7s7 3 7 7"/><circle cx="18" cy="8" r="2.5"/><path d="M22 20c0-3-2-5-4-5"/></svg>
         Estagiários
       </div>
-      <div class="drawer-item" data-page="cadastro" data-tutora="only">
+      <div class="drawer-item" data-page="cadastro" data-tutora="only" data-gga="show">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         Cadastro
       </div>
@@ -716,19 +716,22 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <input class="field-in" type="text" id="cadNome" placeholder="Ex: João Silva" maxlength="60">
         </div>
         <div class="field-grp">
-          <div class="field-lbl">Idade</div>
-          <input class="field-in" type="number" id="cadIdade" placeholder="Ex: 20" min="16" max="35" inputmode="numeric">
-        </div>
-        <div class="field-grp">
           <div class="field-lbl">Funcional (9 dígitos)</div>
           <input class="field-in" type="text" id="cadFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
         </div>
-        <div class="field-grp" style="grid-column:1/-1;">
+        <div class="field-grp">
           <div class="field-lbl">Data de início</div>
           <input class="field-in" type="date" id="cadInicio">
         </div>
-        <div class="field-grp" style="grid-column:1/-1;"><div class="field-lbl">Funcional do gestor</div><input class="field-in" type="text" id="cadGestorFunc" placeholder="000000000" maxlength="9" inputmode="numeric"></div>
-        <div class="field-grp" style="grid-column:1/-1;">
+        <div class="field-grp">
+          <div class="field-lbl">Funcional GA</div>
+          <input class="field-in" type="text" id="cadGAFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
+        </div>
+        <div class="field-grp">
+          <div class="field-lbl">Funcional GGA</div>
+          <input class="field-in" type="text" id="cadGGAFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
+        </div>
+        <div class="field-grp">
           <div class="field-lbl">Certificação</div>
           <select class="field-in" id="cadCertificacao" style="cursor:pointer;">
             <option value="">Nenhuma</option>
@@ -738,8 +741,20 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           </select>
         </div>
         <div class="field-grp" style="grid-column:1/-1;">
-          <div class="field-lbl">Data de nascimento</div>
-          <input class="field-in" type="date" id="cadNascimento">
+          <div class="field-lbl">Mês de aniversário</div>
+          <div style="display:flex;gap:8px;">
+            <select class="field-in" id="cadAnivDia" style="cursor:pointer;flex:1;">
+              <option value="">Dia</option>
+              <script>for(var _d=1;_d<=31;_d++) document.write('<option value="'+_d+'">'+_d+'</option>');</script>
+            </select>
+            <select class="field-in" id="cadAnivMes" style="cursor:pointer;flex:1;">
+              <option value="">Mês</option>
+              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+              <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+              <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+              <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="cad-single-footer">
@@ -837,12 +852,13 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   <div class="panel-body">
     <div class="psec">
       <div class="psec-ttl">Informações</div>
-      <div class="prow"><span class="prow-lbl">Idade</span><span class="prow-val" id="pIdade">—</span></div>
       <div class="prow"><span class="prow-lbl">Funcional</span><span class="prow-val" id="pFunc" style="font-family:monospace">—</span></div>
       <div class="prow"><span class="prow-lbl">Início</span><span class="prow-val" id="pInicio">—</span></div>
       <div class="prow"><span class="prow-lbl">Tempo no programa</span><span class="prow-val" id="pTempo">—</span></div>
+      <div class="prow"><span class="prow-lbl">GA</span><span class="prow-val" id="pGA">—</span></div>
+      <div class="prow"><span class="prow-lbl">GGA</span><span class="prow-val" id="pGGA">—</span></div>
       <div class="prow"><span class="prow-lbl">Certificação</span><span class="prow-val" id="pCertificacao">—</span></div>
-      <div class="prow"><span class="prow-lbl">Nascimento</span><span class="prow-val" id="pNascimento">—</span></div>
+      <div class="prow"><span class="prow-lbl">Aniversário</span><span class="prow-val" id="pNascimento">—</span></div>
       <div class="prow"><span class="prow-lbl">Última atualização de produção</span><span class="prow-val" id="pUltimaAtualizacao">—</span></div>
     </div>
     <div class="psec psec-full">
@@ -1769,11 +1785,17 @@ function getEffectiveTrilhaKey(e){
   return (e.perfil && e.perfil.inicio) ? getTrilhaKey(e.perfil.inicio) : null;
 }
 
+function isGGA(){
+  if(!modoGestor || !gestorLogado) return false;
+  return S.ests.some(function(e){ return e.perfil && e.perfil.gga_funcional === gestorLogado.funcional; });
+}
+
 function isAniversario(e){
-  if(!e.perfil || !e.perfil.nascimento) return false;
-  var nasc = e.perfil.nascimento.split('-');
+  if(!e.perfil || !e.perfil.mes_aniversario) return false;
+  var parts = e.perfil.mes_aniversario.split('-');
+  var dia = parseInt(parts[0]), mes = parseInt(parts[1]);
   var hoje = new Date();
-  return parseInt(nasc[1]) === (hoje.getMonth()+1) && parseInt(nasc[2]) === hoje.getDate();
+  return mes === (hoje.getMonth()+1) && dia === hoje.getDate();
 }
 
 function statusAtualizacao(e){
@@ -1857,8 +1879,8 @@ function renderOverviewKpis(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios){
-      lista = S.ests.filter(function(e){ return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional; });
+    if(!p.todos_estagiarios && !isGGA()){
+      lista = S.ests.filter(function(e){ return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional); });
     }
   }
   // Calcular contagens
@@ -1897,8 +1919,8 @@ function renderOverviewTrilhaChart(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios){
-      lista = S.ests.filter(function(e){ return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional; });
+    if(!p.todos_estagiarios && !isGGA()){
+      lista = S.ests.filter(function(e){ return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional); });
     }
   }
   var counts = {iniciante:0, intermediario:0, avancado:0};
@@ -2400,7 +2422,7 @@ function renderCards(){
     var p = gestorLogado.permissoes || {};
     if(!p.todos_estagiarios){
       lista = S.ests.filter(function(e){
-        return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional;
+        return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
       });
     }
     if(!lista.length){
@@ -2450,8 +2472,15 @@ function openPanel(idx){
   document.getElementById('pAv').textContent=ini(e.nome);
   document.getElementById('pNm').textContent=e.nome;
   document.getElementById('pFn').textContent=e.perfil&&e.perfil.funcional?'#'+e.perfil.funcional:'Sem funcional';
-  document.getElementById('pIdade').textContent=e.perfil&&e.perfil.idade?e.perfil.idade+' anos':'—';
+  // idade removida
   document.getElementById('pFunc').textContent=e.perfil&&e.perfil.funcional?e.perfil.funcional:'—';
+  // GA e GGA
+  var gaFunc = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:null;
+  var ggaFunc = e.perfil&&e.perfil.gga_funcional?e.perfil.gga_funcional:null;
+  var gaGestor = gaFunc ? S.gestores.find(function(g){return g.funcional===gaFunc;}) : null;
+  var ggaGestor = ggaFunc ? S.gestores.find(function(g){return g.funcional===ggaFunc;}) : null;
+  document.getElementById('pGA').textContent = gaGestor ? gaGestor.nome+' (#'+gaFunc+')' : (gaFunc||'—');
+  document.getElementById('pGGA').textContent = ggaGestor ? ggaGestor.nome+' (#'+ggaFunc+')' : (ggaFunc||'—');
   document.getElementById('pInicio').textContent=fmtDate(e.perfil&&e.perfil.inicio?e.perfil.inicio:'');
   document.getElementById('pTempo').textContent=(e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null)||'—';
   var certVal = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
@@ -2466,10 +2495,12 @@ function openPanel(idx){
   // Nascimento
   var nascEl = document.getElementById('pNascimento');
   if(nascEl){
-    var nascVal = e.perfil&&e.perfil.nascimento?e.perfil.nascimento:null;
-    if(nascVal){
+    var anivVal = e.perfil&&e.perfil.mes_aniversario?e.perfil.mes_aniversario:null;
+    if(anivVal){
+      var anivP = anivVal.split('-');
+      var mesesNome = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
       var bday = isAniversario(e);
-      nascEl.innerHTML = fmtDate(nascVal) + (bday?' <span style="font-size:12px;">🎂 Aniversário hoje!</span>':'');
+      nascEl.innerHTML = anivP[0]+' de '+mesesNome[parseInt(anivP[1])] + (bday?' <span style="font-size:12px;">🎂 Aniversário hoje!</span>':'');
     } else { nascEl.textContent = '—'; }
   }
   // Última atualização de produção
@@ -2665,15 +2696,22 @@ function loadEditCad(idx){
   var e = S.ests[idx];
   cadIdx = idx;
   document.getElementById('cadNome').value = e.nome;
-  document.getElementById('cadIdade').value = e.perfil&&e.perfil.idade?e.perfil.idade:'';
+  // idade removida
   document.getElementById('cadFunc').value = e.perfil&&e.perfil.funcional?e.perfil.funcional:'';
   document.getElementById('cadInicio').value = e.perfil&&e.perfil.inicio?e.perfil.inicio:'';
-  var gfEl = document.getElementById('cadGestorFunc');
-  if(gfEl) gfEl.value = e.perfil&&e.perfil.gestor_funcional?e.perfil.gestor_funcional:'';
+  var gaEl = document.getElementById('cadGAFunc');
+  if(gaEl) gaEl.value = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:'';
+  var ggaEl = document.getElementById('cadGGAFunc');
+  if(ggaEl) ggaEl.value = e.perfil&&e.perfil.gga_funcional?e.perfil.gga_funcional:'';
   var certEl = document.getElementById('cadCertificacao');
   if(certEl) certEl.value = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:'';
-  var nascEl = document.getElementById('cadNascimento');
-  if(nascEl) nascEl.value = e.perfil&&e.perfil.nascimento?e.perfil.nascimento:'';
+  if(e.perfil&&e.perfil.mes_aniversario){
+    var anivParts = e.perfil.mes_aniversario.split('-');
+    var diaEl = document.getElementById('cadAnivDia');
+    var mesEl = document.getElementById('cadAnivMes');
+    if(diaEl) diaEl.value = anivParts[0]||'';
+    if(mesEl) mesEl.value = anivParts[1]||'';
+  }
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
@@ -2701,14 +2739,18 @@ async function savePerfil(){
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
-  var gfVal = (document.getElementById('cadGestorFunc')||{}).value || '';
+  var gaVal = (document.getElementById('cadGAFunc')||{}).value||'';
+  var ggaVal = (document.getElementById('cadGGAFunc')||{}).value||'';
+  var anivDia = (document.getElementById('cadAnivDia')||{}).value||'';
+  var anivMes = (document.getElementById('cadAnivMes')||{}).value||'';
+  var mesAniversario = (anivDia && anivMes) ? anivDia+'-'+anivMes : null;
   var perfil = {
-    idade: document.getElementById('cadIdade').value,
     funcional: func,
     inicio: document.getElementById('cadInicio').value,
-    gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9),
+    ga_funcional: gaVal.replace(/[^0-9]/g,'').slice(0,9),
+    gga_funcional: ggaVal.replace(/[^0-9]/g,'').slice(0,9),
     certificacao: document.getElementById('cadCertificacao').value || null,
-    nascimento: document.getElementById('cadNascimento').value || null
+    mes_aniversario: mesAniversario
   };
   
   // Validate
@@ -2757,7 +2799,7 @@ async function savePerfil(){
   
   // reset form
   cadIdx = -1;
-  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc','cadCertificacao','cadNascimento'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
   document.getElementById('cadAv').textContent = '?';
   document.getElementById('cadAv').classList.remove('filled');
@@ -2803,8 +2845,12 @@ function renderTrilha(){
 function goPage(id){
   // Bloqueio de acesso por permissão
   // Cadastro e descricao são SÓ TUTORA — gestor nunca acessa
-  var paginasSoTutora = ['cadastro','configuracoes'];
+  var paginasSoTutora = ['configuracoes'];
+  var paginasTutoraOuGGA = ['cadastro'];
   if(paginasSoTutora.indexOf(id) >= 0 && !editor){
+    id = 'overview';
+  }
+  if(paginasTutoraOuGGA.indexOf(id) >= 0 && !editor && !(modoGestor && isGGA())){
     id = 'overview';
   }
   // Trilhas/conteúdos: tutora sempre, gestor se tiver permissão, visitante não
@@ -2841,7 +2887,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -2854,7 +2900,7 @@ function doLogin(){
 }
 function setCadInputState(){
   var dis=!editor;
-  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){
+  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=dis;
   });
   var btn=document.getElementById('cadAddBtn'); if(btn) btn.disabled=dis;
@@ -2877,6 +2923,11 @@ function applyModoGestor(){
   // Aplicar permissões customizadas: liberar áreas extras
   var p = (gestorLogado && gestorLogado.permissoes) || {};
   if(p.trilhas){
+    document.querySelectorAll('[data-page="trilhas"]').forEach(function(el){ el.style.display=''; });
+  }
+  // GGA: acesso a cadastro e todos os estagiários
+  if(isGGA()){
+    document.querySelectorAll('[data-page="cadastro"]').forEach(function(el){ el.style.display=''; });
     document.querySelectorAll('[data-page="trilhas"]').forEach(function(el){ el.style.display=''; });
   }
   // Esconder botão "Editar banner"
@@ -3009,7 +3060,7 @@ function exportToExcel(){
     var p = gestorLogado.permissoes || {};
     if(!p.todos_estagiarios){
       lista = S.ests.filter(function(e){
-        return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional;
+        return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
       });
     }
   }
