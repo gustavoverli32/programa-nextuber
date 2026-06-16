@@ -1349,7 +1349,14 @@ function getMesesTrimestre(tri){
 }
 
 function getProducaoMensal(eid,tri,mesIdx){
-  var ref=tri+'-M'+mesIdx;
+  // Soma as 4 semanas do mês
+  var total = 0;
+  for(var s=1;s<=4;s++) total += getProducaoSemanal(eid,tri,mesIdx,s);
+  return total;
+}
+
+function getProducaoSemanal(eid,tri,mesIdx,semIdx){
+  var ref=tri+'-M'+mesIdx+'-S'+semIdx;
   if(!S.producao) return 0;
   var row=S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
   return row ? (parseFloat(row.producao)||0) : 0;
@@ -1359,13 +1366,21 @@ function getTotalMensal(eid,tri){
   return getProducaoMensal(eid,tri,1)+getProducaoMensal(eid,tri,2)+getProducaoMensal(eid,tri,3);
 }
 
-async function saveProducaoMensal(eid,tri,mesIdx,valor){
-  var ref=tri+'-M'+mesIdx;
+async function saveProducaoSemanal(eid,tri,mesIdx,semIdx,valor){
+  var ref=tri+'-M'+mesIdx+'-S'+semIdx;
   var r=await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:ref,meta:0,producao:valor},{onConflict:'estagiario_id,tri_ref'}).select().single();
   if(!r.error && r.data){
     var i=S.producao.findIndex(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
     if(i>=0) S.producao[i]=r.data; else S.producao.push(r.data);
   }
+}
+
+function mesFechado(eid,tri,mesIdx){
+  // Mês está fechado quando todas as 4 semanas têm valor > 0
+  for(var s=1;s<=4;s++){
+    if(getProducaoSemanal(eid,tri,mesIdx,s) === 0) return false;
+  }
+  return true;
 }
 function calcPctChecks(e){var tot=0,done=0;['iniciante','intermediario','avancado'].forEach(function(tk){if(TRILHAS[tk])TRILHAS[tk].topicos.forEach(function(tp,ti){var ck=tk+'_'+ti,chk=(e.trilhaChecks&&e.trilhaChecks[ck])||Array(tp.checks.length).fill(false);tot+=tp.checks.length;done+=chk.filter(Boolean).length;});});return tot>0?Math.round((done/tot)*100):0;}
 function faixaComp(p){if(p>=75)return{cor:'#16A34A',bg:'#DCFCE7',label:'Acima do esperado'};if(p>=40)return{cor:'#EC7000',bg:'#FFF3E8',label:'Esperado'};return{cor:'#DC2626',bg:'#FEE2E2',label:'Precisa melhorar'};}
@@ -2186,74 +2201,89 @@ function renderResultadosForTri(idx, tri){
   var prod = getProducaoTri(e.id, tri);
   var meta = parseFloat(prod.meta)||0;
   var meses = getMesesTrimestre(tri);
-  var m1=getProducaoMensal(e.id,tri,1), m2=getProducaoMensal(e.id,tri,2), m3=getProducaoMensal(e.id,tri,3);
-  var totalProd = m1+m2+m3;
-  // Fallback: if no monthly data but old producao exists, show old total
+  var totalProd = getTotalMensal(e.id, tri);
   if(totalProd===0 && parseFloat(prod.producao)>0) totalProd=parseFloat(prod.producao);
   var pct = meta>0 ? Math.round(Math.min(totalProd/meta, 1)*100) : 0;
   var fr = faixaRes(pct);
   var canEdit = (editor || (modoGestor && gestorLogado));
   
+  // KPI cards
   var h = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Meta trimestral</div><div style="font-size:14px;font-weight:500;">'+fmtMilhar(meta)+'</div></div>'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Total produzido</div><div style="font-size:14px;font-weight:500;color:'+(totalProd>0?fr.cor:'var(--ink3)')+';">'+fmtMilhar(totalProd)+'</div></div>'
     +'<div style="background:'+fr.bg+';border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:'+fr.cor+';margin-bottom:3px;">Atingido</div><div style="font-size:14px;font-weight:500;color:'+fr.cor+';">'+(meta>0?pct+'%':'—')+'</div></div>'
     +'</div>'
-    +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:12px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
+    +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:14px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
 
   if(canEdit){
-    h += '<div class="field-grp" style="margin-bottom:10px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'<div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Produção mensal</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
-      +'<div class="field-grp"><div class="field-lbl">'+meses[0].nome+'</div><input class="field-in pMesInput" data-mes="1" type="text" value="'+(m1?fmtMilhar(m1):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'<div class="field-grp"><div class="field-lbl">'+meses[1].nome+'</div><input class="field-in pMesInput" data-mes="2" type="text" value="'+(m2?fmtMilhar(m2):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'<div class="field-grp"><div class="field-lbl">'+meses[2].nome+'</div><input class="field-in pMesInput" data-mes="3" type="text" value="'+(m3?fmtMilhar(m3):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>'
-      +'</div>'
-      +'<div style="display:flex;align-items:center;gap:8px;"><button class="btn-obs" id="btnSalvarResultado">Salvar</button><span class="obs-saved" id="resultadoSaved">✓ Salvo</span></div>';
+    h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
+    
+    // 3 meses, cada um com 4 semanas
+    for(var mi=0;mi<3;mi++){
+      var mesIdx = mi+1;
+      var mesNome = meses[mi].nome;
+      var totalMes = getProducaoMensal(e.id, tri, mesIdx);
+      var fechado = mesFechado(e.id, tri, mesIdx);
+      var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
+      var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
+      var mesStatus = fechado ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
+      
+      h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+          +'<span style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
+          +'<div style="display:flex;align-items:center;gap:8px;">'
+            +mesStatus
+            +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">';
+      
+      for(var si=1;si<=4;si++){
+        var semVal = getProducaoSemanal(e.id, tri, mesIdx, si);
+        h += '<div class="field-grp" style="margin:0;"><div class="field-lbl" style="font-size:9px;">Sem '+si+'</div>'
+          +'<input class="field-in pSemInput" data-mes="'+mesIdx+'" data-sem="'+si+'" type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" style="font-size:12px;padding:6px 8px;"></div>';
+      }
+      h += '</div></div>';
+    }
+    
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><button class="btn-obs" id="btnSalvarResultado">Salvar</button><span class="obs-saved" id="resultadoSaved">✓ Salvo</span></div>';
+  } else {
+    // Visualização readonly para quem não edita
+    for(var mi=0;mi<3;mi++){
+      var mesIdx2 = mi+1;
+      var totalMes2 = getProducaoMensal(e.id, tri, mesIdx2);
+      var fechado2 = mesFechado(e.id, tri, mesIdx2);
+      h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
+        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi].nome+'</span>'
+        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes2)+(fechado2?' ✓':'')+'</span></div>';
+    }
   }
   h += '<div id="pHistoricoTri"></div>';
   el.innerHTML = h;
   
   loadSnapshotsHistory(e.id);
-  // Auto-format all numeric inputs
-  ['pMetaInput'].concat(Array.from(document.querySelectorAll('.pMesInput')).map(function(el){return null;})).forEach(function(id){
-    if(!id) return;
-    var inp = document.getElementById(id);
-    if(!inp) return;
-    inp.addEventListener('input', function(){
-      var v = this.value.replace(/[^0-9]/g,'');
-      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
-    });
-  });
-  document.querySelectorAll('.pMesInput').forEach(function(inp){
-    inp.addEventListener('input', function(){
-      var v = this.value.replace(/[^0-9]/g,'');
-      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
-    });
-  });
+  // Auto-format
   var metaInp = document.getElementById('pMetaInput');
-  if(metaInp){
-    metaInp.addEventListener('input', function(){
-      var v = this.value.replace(/[^0-9]/g,'');
-      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
-    });
-  }
+  if(metaInp) metaInp.addEventListener('input', function(){ var v=this.value.replace(/[^0-9]/g,''); this.value=v?parseInt(v).toLocaleString('pt-BR'):''; });
+  document.querySelectorAll('.pSemInput').forEach(function(inp){
+    inp.addEventListener('input', function(){ var v=this.value.replace(/[^0-9]/g,''); this.value=v?parseInt(v).toLocaleString('pt-BR'):''; });
+  });
 
   var btn = document.getElementById('btnSalvarResultado');
   if(btn){
     btn.addEventListener('click', async function(){
       var newMeta = parseMilhar((document.getElementById('pMetaInput')||{}).value)||0;
       await saveMetaTri(e.id, tri, newMeta);
-      var mesInputs = document.querySelectorAll('.pMesInput');
+      var semInputs = document.querySelectorAll('.pSemInput');
       var total = 0;
-      for(var i=0;i<mesInputs.length;i++){
-        var val = parseMilhar(mesInputs[i].value)||0;
-        var mesIdx = parseInt(mesInputs[i].getAttribute('data-mes'));
-        await saveProducaoMensal(e.id, tri, mesIdx, val);
+      for(var i=0;i<semInputs.length;i++){
+        var val = parseMilhar(semInputs[i].value)||0;
+        var mesI = parseInt(semInputs[i].getAttribute('data-mes'));
+        var semI = parseInt(semInputs[i].getAttribute('data-sem'));
+        await saveProducaoSemanal(e.id, tri, mesI, semI, val);
         total += val;
       }
       await saveProducaoTri(e.id, tri, total);
-      // Atualizar timestamp de última atualização de produção
       if(!e.perfil) e.perfil = {};
       e.perfil.ultima_atualizacao_prod = new Date().toISOString().slice(0,10);
       await saveEstagiario(e);
