@@ -1510,7 +1510,7 @@ var TRILHA_INFO = {
   avancado:      {label:'Acima de 6 meses', name:'Fase 3 | Impactar', cor:'#166534', bg:'#DCFCE7', desc:'PDI, novos horizontes e carreira.'}
 };
 
-var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null;
+var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null, pSelectedMesIdx=1;
 
 // ── PERSIST ────────────────────────────────────────────────────────────────
 // persist is now async — call with await or fire-and-forget
@@ -1609,7 +1609,8 @@ async function deleteFeedback(id){
 
 async function saveMetaTri(eid,tri,meta){
   var ex = getProducaoTri(eid,tri);
-  var r = await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:tri,meta:meta,producao:ex.producao||0},{onConflict:'estagiario_id,tri_ref'}).select().single();
+  var dataToSave = JSON.parse(JSON.stringify({estagiario_id:eid,tri_ref:tri,meta:parseFloat(meta)||0,producao:parseFloat(ex.producao)||0}));
+  var r = await sb.from('producao_trimestral').upsert(dataToSave,{onConflict:'estagiario_id,tri_ref'}).select().single();
   if(!r.error && r.data){
     var i = S.producao.findIndex(function(p){return p.estagiario_id===eid && p.tri_ref===tri;});
     if(i>=0) S.producao[i] = r.data; else S.producao.push(r.data);
@@ -2266,6 +2267,25 @@ function renderResultados(idx){
   renderResultadosForTri(idx, tri);
 }
 
+// ─── DETECTAR MÊS VIGENTE ───
+function getMesVigente(){
+  var hoje = new Date();
+  var mesAtual = hoje.getMonth();
+  return mesAtual + 1;
+}
+function getMesVigenteEmTrimestre(tri){
+  var mesVigente = getMesVigente();
+  var trimestre = tri.split('-')[1];
+  var trimNum = parseInt(trimestre);
+  var mesInicioTri = (trimNum - 1) * 3 + 1;
+  if(mesVigente >= mesInicioTri && mesVigente < mesInicioTri + 3){
+    return mesVigente - mesInicioTri + 1;
+  }
+  if(mesVigente >= mesInicioTri + 3) return 3;
+  return 1;
+}
+
+
 function renderResultadosForTri(idx, tri){
   var el = document.getElementById('pResultados'); if(!el) return;
   var e = S.ests[idx];
@@ -2273,7 +2293,19 @@ function renderResultadosForTri(idx, tri){
   var meta = parseFloat(prod.meta)||0;
   var meses = getMesesTrimestre(tri);
   
-  // Total produzido = soma das modalidades (NOVO) OU dados antigos por compatibilidade
+  // Detectar mês vigente
+  var mesVigente = getMesVigenteEmTrimestre(tri);
+  
+  // Inicializar índice selecionado no mês vigente
+  if(pSelectedMesIdx === undefined || pSelectedMesIdx < 1 || pSelectedMesIdx > 3){
+    pSelectedMesIdx = mesVigente;
+  }
+  
+  var mesIdx = pSelectedMesIdx;
+  var mesNome = meses[mesIdx - 1].nome;
+  var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+  
+  // Total produzido = soma das modalidades OU dados antigos
   var totalModalidades = getTotalTrimestreModalidades(e.id, tri);
   var totalMensalAntigo = getTotalMensal(e.id, tri);
   var totalProd = totalModalidades > 0 ? totalModalidades : (totalMensalAntigo > 0 ? totalMensalAntigo : (parseFloat(prod.producao)||0));
@@ -2282,8 +2314,35 @@ function renderResultadosForTri(idx, tri){
   var fr = faixaRes(pct);
   var canEdit = (editor || (modoGestor && gestorLogado));
   
-  // KPI cards
-  var h = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
+  // RENDERIZAR ESTRUTURA
+  var h = '';
+  
+  // ─── ABAS DE NAVEGAÇÃO ───
+  h += '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">';
+  for(var mi = 1; mi <= 3; mi++){
+    var mNome = meses[mi-1].nome;
+    var isVigente = (mi === mesVigente);
+    var isSelected = (mi === mesIdx);
+    var tabBg = isSelected ? 'var(--or)' : 'transparent';
+    var tabColor = isSelected ? '#fff' : (isVigente ? 'var(--or)' : 'var(--ink2)');
+    var tabBorder = isSelected ? '' : (isVigente ? '2px solid var(--or)' : '');
+    var tabStyle = isSelected 
+      ? 'background:var(--or);color:#fff;border-bottom:3px solid var(--or);'
+      : (isVigente 
+        ? 'color:var(--or);font-weight:600;' 
+        : '');
+    
+    h += '<button class="pMesTab" data-mesidx="'+mi+'" style="'
+      +'flex:1;padding:12px 0;border:none;background:transparent;color:'+tabColor+';'
+      +'font-size:13px;font-weight:'+(isSelected?'700':'500')+';cursor:pointer;'
+      +'border-bottom:3px solid '+(isSelected?'var(--or)':'transparent')+';'
+      +'transition:all .2s;font-family:inherit;'
+      +'">'+mNome+(isVigente && mi !== mesIdx?' (Vigente)':'')+' <span style="font-size:10px;color:var(--ink3);">'+fmtMilhar(getTotalMesModalidades(e.id, tri, mi))+'</span></button>';
+  }
+  h += '</div>';
+  
+  // ─── KPI CARDS (TOTAL DO TRIMESTRE) ───
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Meta trimestral</div><div style="font-size:14px;font-weight:500;">'+fmtMilhar(meta)+'</div></div>'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Total produzido</div><div style="font-size:14px;font-weight:500;color:'+(totalProd>0?fr.cor:'var(--ink3)')+';">'+fmtMilhar(totalProd)+'</div></div>'
     +'<div style="background:'+fr.bg+';border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:'+fr.cor+';margin-bottom:3px;">Atingido</div><div style="font-size:14px;font-weight:500;color:'+fr.cor+';">'+(meta>0?pct+'%':'—')+'</div></div>'
@@ -2291,45 +2350,48 @@ function renderResultadosForTri(idx, tri){
     +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:14px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
 
   if(canEdit){
-    // Input da meta
-    h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
+    // Input da meta (apenas mostra uma vez, não em cada mês)
+    if(mesIdx === 1){
+      h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
+    }
     
-    // 3 meses, cada um com TABELA: 4 modalidades × 4 semanas
-    for(var mi = 0; mi < 3; mi++){
-      var mesIdx = mi + 1;
-      var mesNome = meses[mi].nome;
-      var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
-      // Mês fechado se total > 0 em todas as semanas
-      var fechado = true;
-      for(var s = 1; s <= 4; s++){
-        if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
-      }
-      
-      var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
-      var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
-      var mesStatus = fechado 
-        ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
-        : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
-      
-      h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+    // ─── CARD DO MÊS SELECIONADO ───
+    var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+    var fechado = true;
+    for(var s = 1; s <= 4; s++){
+      if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
+    }
+    
+    var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
+    var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
+    var mesStatus = fechado 
+      ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
+      : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
+    
+    var mesVigenteLabel = (mesIdx === mesVigente) ? '<span style="background:var(--or);color:#fff;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600;margin-left:8px;">MÊS VIGENTE</span>' : '';
+    
+    h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;">'
           +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
-          +'<div style="display:flex;align-items:center;gap:8px;">'
-            +mesStatus
-            +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
-          +'</div>'
+          +mesVigenteLabel
         +'</div>'
-        +'<div style="overflow-x:auto;">'
-        +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
-        +'<thead><tr style="background:var(--bg);">'
-        +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
-        +'</tr></thead>'
-        +'<tbody>';
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+          +mesStatus
+          +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div style="overflow-x:auto;">'
+      +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
+      +'<thead><tr style="background:var(--bg);">'
+      +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
+      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
+      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
+      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
+      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
+      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
+      +'</tr></thead>'
+      +'<tbody>';
       
       // Uma linha por modalidade
       MODALIDADES.forEach(function(mod, modIdx){
@@ -2341,7 +2403,7 @@ function renderResultadosForTri(idx, tri){
           var semVal = getProducaoSemanalModalidade(e.id, tri, mesIdx, si, modIdx);
           totalMod += semVal;
           h += '<td style="padding:3px;border:1px solid var(--border);">'
-            +'<input class="pModInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
+            +'<input class="pModInput" data-tri="'+tri+'" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
             +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '
             +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);">'
             +'</td>';
@@ -2350,7 +2412,7 @@ function renderResultadosForTri(idx, tri){
           +'</tr>';
       });
       
-      // Linha de TOTAL (semanas e mês)
+      // Linha de TOTAL
       h += '<tr style="background:var(--bg);font-weight:700;">'
         +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
       for(var si2 = 1; si2 <= 4; si2++){
@@ -2360,7 +2422,6 @@ function renderResultadosForTri(idx, tri){
       h += '<td class="pModTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalMes)+'</td>'
         +'</tr>'
         +'</tbody></table></div></div>';
-    }
     
     h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">'
       +'<button class="btn-obs" id="btnSalvarResultado">Salvar</button>'
@@ -2369,30 +2430,38 @@ function renderResultadosForTri(idx, tri){
     
     // ─── INDICADORES POR MODALIDADE ───
     h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade</div>'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade (Trimestre)</div>'
       +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
       +'</div>';
     
     // ─── GRÁFICO DE PIZZA ───
     h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas</div>'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas (Trimestre)</div>'
       +'<div id="pGraficoMod"></div>'
       +'</div>';
     
   } else {
     // Visualização readonly
-    for(var mi3 = 0; mi3 < 3; mi3++){
-      var mesIdx3 = mi3 + 1;
-      var totalMes3 = getTotalMesModalidades(e.id, tri, mesIdx3);
-      h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi3].nome+'</span>'
-        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes3)+'</span></div>';
-    }
+    var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+    h += '<div style="padding:16px;background:var(--bg);border-radius:var(--r2);text-align:center;color:var(--ink2);font-size:13px;">'
+      +'<strong>'+mesNome+':</strong> '+fmtMilhar(totalMes)
+      +'</div>';
   }
+  
   h += '<div id="pHistoricoTri"></div>';
   el.innerHTML = h;
   
   loadSnapshotsHistory(e.id);
+  
+  // ─── LISTENERS ───
+  
+  // Abas de navegação
+  document.querySelectorAll('.pMesTab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      pSelectedMesIdx = parseInt(this.dataset.mesidx);
+      renderResultadosForTri(idx, tri);
+    });
+  });
   
   // Auto-format meta
   var metaInp = document.getElementById('pMetaInput');
@@ -2410,7 +2479,7 @@ function renderResultadosForTri(idx, tri){
     });
   });
   
-  // Renderizar indicadores e gráfico iniciais
+  // Renderizar indicadores e gráfico
   if(canEdit){
     renderIndicadoresModalidades(idx, tri);
     renderGraficoPizzaModalidades(idx, tri);
@@ -2826,7 +2895,7 @@ function renderCards(){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
-    return '<div class="notion-card'+(panelIdx===ei?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
+    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
       +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
@@ -2843,7 +2912,11 @@ function renderCards(){
   document.getElementById('notionGrid').innerHTML='<div class="notion-grid">'+cards+'</div>';
   // attach click events
   document.querySelectorAll('.notion-card').forEach(function(card){
-    card.addEventListener('click',function(){ openPanel(parseInt(this.dataset.ei)); });
+    card.addEventListener('click',function(){
+    var eid = this.dataset.eid;
+    var idx = S.ests.findIndex(function(e){ return e.id === eid; });
+    if(idx >= 0) openPanel(idx);
+  });
   });
 }
 
@@ -3003,7 +3076,7 @@ function renderGestoresList(){
       +'<div class="cad-list-av" style="background:var(--ink);color:#fff;">'+g.nome[0].toUpperCase()+'</div>'
       +'<div class="cad-list-info">'
         +'<div class="cad-list-name">'+g.nome+'</div>'
-        +'<div class="cad-list-meta"><span>#'+g.funcional+'</span>'+(pCount>0?'<span style="color:var(--or);font-weight:500;">'+pCount+' acesso'+(pCount>1?'s':'')+' extra</span>':'')+'</div>'
+        +'<div class="cad-list-meta"><span>#'+g.funcional+'</span>'+'<span style="background:'+(g.tipo_gestor==='gga'?'#FEE2E2':'#E0F2FE')+';color:'+(g.tipo_gestor==='gga'?'#DC2626':'#0369A1')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;">'+(g.tipo_gestor==='gga'?'👔 GGA':'👤 GA')+'</span>'+(pCount>0?'<span style="color:var(--or);font-weight:500;">'+pCount+' acesso'+(pCount>1?'s':'')+' extra</span>':'')+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px;">'
         +'<button class="cad-list-btn" data-permgestor="'+g.id+'" style="color:var(--or);border-color:rgba(236,112,0,.3);">⚙ Permissões</button>'
@@ -3023,7 +3096,33 @@ function renderGestoresList(){
   el.querySelectorAll('[data-permgestor]').forEach(function(btn){
     btn.addEventListener('click', function(){ abrirPermissoesGestor(this.dataset.permgestor); });
   });
+  el.querySelectorAll('[data-tipogestor]').forEach(function(btn){
+    btn.addEventListener('click', function(){ abrirTipoGestorModal(this.dataset.tipogestor); });
+  });
 }
+
+// BUG 3: Funções para editar tipo do gestor
+function abrirTipoGestorModal(gestorId){
+  if(!editor) return;
+  var g = S.gestores.find(function(x){ return x.id === gestorId; });
+  if(!g) return;
+  var tipoAtual = g.tipo_gestor || 'ga';
+  var novoTipo = tipoAtual === 'gga' ? 'ga' : 'gga';
+  var label = novoTipo === 'gga' ? '👔 Gerente Geral da Agência (GGA)' : '👤 Gerente de Atendimento (GA)';
+  if(confirm('Alterar tipo de "'+g.nome+'" para '+label+'?')){
+    alterarTipoGestor(gestorId, novoTipo);
+  }
+}
+async function alterarTipoGestor(gestorId, novoTipo){
+  var update = JSON.parse(JSON.stringify({tipo_gestor:novoTipo}));
+  var r = await sb.from('gestores').update(update).eq('id', gestorId).select().single();
+  if(!r.error && r.data){
+    var i = S.gestores.findIndex(function(g){ return g.id === gestorId; });
+    if(i >= 0) S.gestores[i] = r.data;
+    renderGestoresList();
+  }
+}
+
 
 function renderCadChips(){
   renderCadList();
