@@ -1014,9 +1014,31 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 <div class="login-ov" id="permissoesOv">
   <div class="login-box" style="max-width:520px;">
     <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:4px;">Permissões do gestor</h3>
-    <p style="font-size:13px;color:var(--ink3);margin-bottom:6px;">Definir áreas extras de acesso para <strong id="permGestorNome">—</strong>.</p>
-    <p style="font-size:11.5px;color:var(--ink3);margin-bottom:16px;font-style:italic;">Por padrão, o gestor tem acesso apenas à página inicial e ao acompanhamento dos seus estagiários.</p>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;">Definir tipo de acesso e permissões para <strong id="permGestorNome">—</strong>.</p>
 
+    <!-- Tipo de Gestor (GA / GGA) -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;padding:14px;background:#F3F4F6;border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:600;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Tipo de gestor</div>
+      <p style="font-size:11.5px;color:var(--ink3);margin-bottom:10px;">Escolha o nível de acesso deste gestor à plataforma.</p>
+      
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:white;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;transition:all .2s;">
+        <input type="radio" id="tipoGA" name="permTipoGestor" value="ga" style="width:16px;height:16px;accent-color:var(--or);flex-shrink:0;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);">👤 GA - Gerente de Atendimento</div>
+          <div style="font-size:10.5px;color:var(--ink3);">Acesso limitado aos seus estagiários e permissões específicas</div>
+        </div>
+      </label>
+      
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:white;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;transition:all .2s;">
+        <input type="radio" id="tipoGGA" name="permTipoGestor" value="gga" style="width:16px;height:16px;accent-color:var(--or);flex-shrink:0;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);">👔 GGA - Gerente Geral da Agência</div>
+          <div style="font-size:10.5px;color:var(--ink3);">Acesso completo à plataforma (todas as permissões ativadas)</div>
+        </div>
+      </label>
+    </div>
+
+    <!-- Checkboxes de permissões -->
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
       <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;">
         <input type="checkbox" id="permTrilhas" style="width:18px;height:18px;accent-color:var(--or);flex-shrink:0;">
@@ -2936,19 +2958,53 @@ function abrirPermissoesGestor(id){
   var g = S.gestores.find(function(x){ return x.id === id; });
   if(!g) return;
   var perms = g.permissoes || {};
+  var tipo = g.tipo_gestor || 'ga';
+  
   document.getElementById('permGestorId').value = id;
   document.getElementById('permGestorNome').textContent = g.nome;
+  
+  // Carregar tipo de gestor
+  document.getElementById('tipoGA').checked = (tipo === 'ga');
+  document.getElementById('tipoGGA').checked = (tipo === 'gga');
+  
+  // Carregar permissões
   document.getElementById('permTrilhas').checked = !!perms.trilhas;
   document.getElementById('permRanking').checked = !!perms.ranking;
   document.getElementById('permTodosEstag').checked = !!perms.todos_estagiarios;
+  
   // Limpar campo de nova senha sempre que abrir
   document.getElementById('permNovaSenha').value = '';
+  
+  // Listeners para auto-marcar checkboxes quando GGA é selecionado
+  document.getElementById('tipoGA').addEventListener('change', function(){
+    if(this.checked){
+      // GA = usuário controla manualmente, desabilitar auto-check
+      document.getElementById('permTrilhas').disabled = false;
+      document.getElementById('permRanking').disabled = false;
+      document.getElementById('permTodosEstag').disabled = false;
+    }
+  });
+  
+  document.getElementById('tipoGGA').addEventListener('change', function(){
+    if(this.checked){
+      // GGA = auto-marcar todas as permissões
+      document.getElementById('permTrilhas').checked = true;
+      document.getElementById('permRanking').checked = true;
+      document.getElementById('permTodosEstag').checked = true;
+      // Ainda permite o usuário desmarcar se quiser
+      document.getElementById('permTrilhas').disabled = false;
+      document.getElementById('permRanking').disabled = false;
+      document.getElementById('permTodosEstag').disabled = false;
+    }
+  });
+  
   document.getElementById('permissoesOv').classList.add('open');
 }
 
 async function salvarPermissoesGestor(){
   var id = document.getElementById('permGestorId').value;
   var novaSenha = document.getElementById('permNovaSenha').value.trim();
+  var tipoGestor = document.querySelector('input[name="permTipoGestor"]:checked').value;
   
   // Validar nova senha (se preenchida)
   if(novaSenha && novaSenha.length < 4){
@@ -2962,7 +3018,10 @@ async function salvarPermissoesGestor(){
     todos_estagiarios: document.getElementById('permTodosEstag').checked
   };
   
-  var update = {permissoes: permissoes};
+  var update = {
+    permissoes: permissoes,
+    tipo_gestor: tipoGestor
+  };
   if(novaSenha){
     update.senha_hash = await hashSenha(novaSenha.slice(0,4));
   }
@@ -3007,14 +3066,19 @@ function renderGestoresList(){
   el.innerHTML = S.gestores.map(function(g){
     var perms = g.permissoes || {};
     var pCount = Object.keys(perms).filter(function(k){ return perms[k]; }).length;
+    var tipo = g.tipo_gestor || 'ga';
+    var tipoBg = tipo === 'gga' ? '#FEE2E2' : '#E0F2FE';
+    var tipoColor = tipo === 'gga' ? '#DC2626' : '#0369A1';
+    var tipoLabel = tipo === 'gga' ? '👔 GGA' : '👤 GA';
+    
     return '<div class="cad-list-row">'
       +'<div class="cad-list-av" style="background:var(--ink);color:#fff;">'+g.nome[0].toUpperCase()+'</div>'
       +'<div class="cad-list-info">'
         +'<div class="cad-list-name">'+g.nome+'</div>'
-        +'<div class="cad-list-meta"><span>#'+g.funcional+'</span>'+(pCount>0?'<span style="color:var(--or);font-weight:500;">'+pCount+' acesso'+(pCount>1?'s':'')+' extra</span>':'')+'</div>'
+        +'<div class="cad-list-meta"><span>#'+g.funcional+'</span><span style="background:'+tipoBg+';color:'+tipoColor+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;">'+tipoLabel+'</span>'+(pCount>0?'<span style="color:var(--or);font-weight:500;">'+pCount+' acesso'+(pCount>1?'s':'')+' extra</span>':'')+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px;">'
-        +'<button class="cad-list-btn" data-permgestor="'+g.id+'" style="color:var(--or);border-color:rgba(236,112,0,.3);">⚙ Permissões</button>'
+        +'<button class="cad-list-btn" data-permgestor="'+g.id+'" style="color:var(--or);border-color:rgba(236,112,0,.3);'+(editor?'':'opacity:.5;cursor:default;pointer-events:none;')+'">⚙ Permissões</button>'
         +'<button class="cad-list-btn cad-del-btn" data-delgestor="'+g.id+'" style="color:#DC2626;border-color:#FECACA;">Remover</button>'
       +'</div>'
     +'</div>';
@@ -3029,7 +3093,10 @@ function renderGestoresList(){
     });
   });
   el.querySelectorAll('[data-permgestor]').forEach(function(btn){
-    btn.addEventListener('click', function(){ abrirPermissoesGestor(this.dataset.permgestor); });
+    btn.addEventListener('click', function(){
+      if(!editor) return; // Apenas tutora pode gerenciar permissões
+      abrirPermissoesGestor(this.dataset.permgestor);
+    });
   });
 }
 
