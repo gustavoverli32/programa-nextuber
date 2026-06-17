@@ -1362,6 +1362,27 @@ function trimestreRef(){return anoAtual()+'-'+trimestreAtual();}
 function fmtTrimestre(t){if(!t)return'—';var p=t.split('-');return p[1].replace('Q','')+'º Tri '+p[0];}
 function ultimosTrimestres(){var r=[],d=new Date(),a=d.getFullYear(),q=Math.floor(d.getMonth()/3)+1;for(var i=0;i<6;i++){r.push(a+'-Q'+q);q--;if(q<1){q=4;a--;}}return r;}
 function getProducaoTri(eid,tri){if(!S.producao)return{meta:0,producao:0};return S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===tri;})||{meta:0,producao:0};}
+// ─── DETECÇÃO DE MÊS VIGENTE ───
+function getMesVigente(){
+  var hoje = new Date();
+  return hoje.getMonth() + 1; // Retorna 1-12
+}
+
+function getMesVigenteEmTrimestre(tri){
+  var mesVigente = getMesVigente();
+  // Extrair o trimestre do string "2025-Q2"
+  var trimMatch = tri.match(/Q(\d)/);
+  if(!trimMatch) return 1;
+  var trimNum = parseInt(trimMatch[1]);
+  var mesInicioTri = (trimNum - 1) * 3 + 1;
+  
+  if(mesVigente >= mesInicioTri && mesVigente < mesInicioTri + 3){
+    return mesVigente - mesInicioTri + 1; // 1, 2 ou 3
+  }
+  if(mesVigente >= mesInicioTri + 3) return 3;
+  return 1;
+}
+
 
 function getMesesTrimestre(tri){
   var parts=tri.split('-'), y=parts[0], t=parseInt(parts[1].replace('Q','').replace('T',''));
