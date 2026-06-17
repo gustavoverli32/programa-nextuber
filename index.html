@@ -2843,7 +2843,11 @@ function renderCards(){
   document.getElementById('notionGrid').innerHTML='<div class="notion-grid">'+cards+'</div>';
   // attach click events
   document.querySelectorAll('.notion-card').forEach(function(card){
-    card.addEventListener('click',function(){ openPanel(this.dataset.eid); });
+    card.addEventListener('click',function(){
+      var eid = this.dataset.eid;
+      var idx = S.ests.findIndex(function(e){ return e.id === eid; });
+      if(idx >= 0) openPanel(idx);
+    });
   });
 }
 
