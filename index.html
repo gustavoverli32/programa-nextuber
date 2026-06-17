@@ -2826,7 +2826,7 @@ function renderCards(){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
-    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
+    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-eid="'+e.id+'" style="'+cardBorder+'">'
       +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
@@ -2852,9 +2852,13 @@ function renderCards(){
 }
 
 // ── PANEL ──────────────────────────────────────────────────────────────────
+function getPanelEstIdx(){
+  if(panelIdx===-1 || panelIdx===undefined || panelIdx===null) return -1;
+  return S.ests.findIndex(function(e){ return e.id === panelIdx; });
+}
 function openPanel(idx){
-  panelIdx=idx;
   var e=S.ests[idx];
+  panelIdx=e.id;
   document.getElementById('pAv').textContent=ini(e.nome);
   document.getElementById('pNm').textContent=e.nome;
   document.getElementById('pFn').textContent=e.perfil&&e.perfil.funcional?'#'+e.perfil.funcional:'Sem funcional';
@@ -3396,15 +3400,16 @@ function applyMode(){
     renderCards();
   }
   setCadInputState();
-  if(panelIdx>=0){
+  var _pIdx = getPanelEstIdx();
+  if(_pIdx>=0){
     document.getElementById('obsTA').disabled=!editor;
     document.getElementById('btnObs').disabled=!editor;
     document.getElementById('obsHint').textContent=editor?'Salvo localmente no navegador.':'Entre como tutora para editar.';
-    renderPanelTrilha(panelIdx);
-    updateAtencaoBtn(panelIdx);
-    renderAvaliacao(panelIdx);
-    renderResultados(panelIdx);
-    renderFeedbacks(S.ests[panelIdx].id);
+    renderPanelTrilha(_pIdx);
+    updateAtencaoBtn(_pIdx);
+    renderAvaliacao(_pIdx);
+    renderResultados(_pIdx);
+    renderFeedbacks(S.ests[_pIdx].id);
   }
   
   renderRanking();
@@ -3676,17 +3681,19 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Atenção button
   document.getElementById('btnAtencao').addEventListener('click', function(){
-    if(!editor || panelIdx < 0) return;
-    S.ests[panelIdx].atencao = !S.ests[panelIdx].atencao;
-    saveEstagiario(S.ests[panelIdx]); persist(true);
-    updateAtencaoBtn(panelIdx);
+    var _pIdx = getPanelEstIdx();
+    if(!editor || _pIdx < 0) return;
+    S.ests[_pIdx].atencao = !S.ests[_pIdx].atencao;
+    saveEstagiario(S.ests[_pIdx]); persist(true);
+    updateAtencaoBtn(_pIdx);
     renderCards();
   });
 
 document.getElementById('btnObs').addEventListener('click', function(){
-    if(!editor||panelIdx<0) return;
-    S.ests[panelIdx].obs=document.getElementById('obsTA').value;
-    saveEstagiario(S.ests[panelIdx]); persist(true);
+    var _pIdx = getPanelEstIdx();
+    if(!editor||_pIdx<0) return;
+    S.ests[_pIdx].obs=document.getElementById('obsTA').value;
+    saveEstagiario(S.ests[_pIdx]); persist(true);
     var b=document.getElementById('obsSaved'); b.classList.add('show'); setTimeout(function(){b.classList.remove('show');},2000);
   });
 
@@ -3702,7 +3709,8 @@ document.getElementById('btnObs').addEventListener('click', function(){
     ['fbConteudo','fbFreq','fbEvolucao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   });
   document.getElementById('btnSalvarFeedback').addEventListener('click', async function(){
-    if(panelIdx<0) return;
+    var _pIdx = getPanelEstIdx();
+    if(_pIdx<0) return;
     var conteudo = document.getElementById('fbConteudo').value.trim();
     if(!conteudo){ document.getElementById('fbConteudo').focus(); return; }
     var dados = {
@@ -3711,9 +3719,9 @@ document.getElementById('btnObs').addEventListener('click', function(){
       frequencia: document.getElementById('fbFreq').value,
       evolucao: document.getElementById('fbEvolucao').value
     };
-    var r = await saveFeedback(S.ests[panelIdx].id, dados);
+    var r = await saveFeedback(S.ests[_pIdx].id, dados);
     if(r && r.error){ alert('Erro ao salvar feedback: ' + (r.error.message||JSON.stringify(r.error))); return; }
-    renderFeedbacks(S.ests[panelIdx].id);
+    renderFeedbacks(panelIdx);
     document.getElementById('feedbackFormWrap').style.display = 'none';
     document.getElementById('btnAddFeedback').style.display = 'inline-flex';
     ['fbConteudo','fbFreq','fbEvolucao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
