@@ -1824,7 +1824,7 @@ function getEffectiveTrilhaKey(e){
 
 function isGGA(){
   if(!modoGestor || !gestorLogado) return false;
-  return S.ests.some(function(e){ return e.perfil && e.perfil.gga_funcional === gestorLogado.funcional; });
+  return gestorLogado.tipo_gestor === 'gga';
 }
 
 function isAniversario(e){
