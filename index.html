@@ -1609,7 +1609,7 @@ async function deleteFeedback(id){
 
 async function saveMetaTri(eid,tri,meta){
   var ex = getProducaoTri(eid,tri);
-  var r = await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:tri,meta:meta,producao:ex.producao||0},{onConflict:'estagiario_id,tri_ref'}).select().single();
+  var dataToSave = JSON.parse(JSON.stringify({estagiario_id:eid,tri_ref:tri,meta:parseFloat(meta)||0,producao:parseFloat(ex.producao)||0}));var r = await sb.from('producao_trimestral').upsert(dataToSave,{onConflict:'estagiario_id,tri_ref'}).select().single();
   if(!r.error && r.data){
     var i = S.producao.findIndex(function(p){return p.estagiario_id===eid && p.tri_ref===tri;});
     if(i>=0) S.producao[i] = r.data; else S.producao.push(r.data);
@@ -2183,6 +2183,77 @@ async function loadEvolucaoChart(eid){
     +'</div>';
 }
 
+// ── MODALIDADES ──
+var MODALIDADES = ['INSS', 'OP', 'EP', 'Creditário'];
+var CORES_MODALIDADES = {
+  'INSS': '#2196F3',
+  'OP': '#FF9800',
+  'EP': '#E91E63',
+  'Creditário': '#009688'
+};
+
+// Pega o valor produzido de uma semana específica para uma modalidade
+function getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx){
+  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
+  if(!S.producao) return 0;
+  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+  return row ? (parseFloat(row.producao) || 0) : 0;
+}
+
+// Salva o valor produzido de uma semana específica para uma modalidade
+async function saveProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx, valor){
+  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
+  var r = await sb.from('producao_trimestral').upsert({
+    estagiario_id: eid,
+    tri_ref: ref,
+    meta: 0,
+    producao: valor
+  }, {onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+    if(i >= 0) S.producao[i] = r.data;
+    else S.producao.push(r.data);
+  }
+}
+
+// Soma de uma semana (todas as 4 modalidades)
+function getTotalSemanaModalidades(eid, tri, mesIdx, semIdx){
+  var total = 0;
+  for(var m = 0; m < 4; m++){
+    total += getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, m);
+  }
+  return total;
+}
+
+// Soma do mês (todas as semanas, todas as modalidades)
+function getTotalMesModalidades(eid, tri, mesIdx){
+  var total = 0;
+  for(var s = 1; s <= 4; s++){
+    total += getTotalSemanaModalidades(eid, tri, mesIdx, s);
+  }
+  return total;
+}
+
+// Soma total do trimestre por modalidade específica
+function getTotalTrimestreModalidade(eid, tri, modIdx){
+  var total = 0;
+  for(var mi = 1; mi <= 3; mi++){
+    for(var s = 1; s <= 4; s++){
+      total += getProducaoSemanalModalidade(eid, tri, mi, s, modIdx);
+    }
+  }
+  return total;
+}
+
+// Soma total do trimestre (todas as modalidades)
+function getTotalTrimestreModalidades(eid, tri){
+  var total = 0;
+  for(var m = 0; m < 4; m++){
+    total += getTotalTrimestreModalidade(eid, tri, m);
+  }
+  return total;
+}
+
 function renderResultados(idx){
   var el = document.getElementById('pResultados');
   var sel = document.getElementById('pTriSelect');
@@ -2201,8 +2272,12 @@ function renderResultadosForTri(idx, tri){
   var prod = getProducaoTri(e.id, tri);
   var meta = parseFloat(prod.meta)||0;
   var meses = getMesesTrimestre(tri);
-  var totalProd = getTotalMensal(e.id, tri);
-  if(totalProd===0 && parseFloat(prod.producao)>0) totalProd=parseFloat(prod.producao);
+  
+  // Total produzido = soma das modalidades (NOVO) OU dados antigos por compatibilidade
+  var totalModalidades = getTotalTrimestreModalidades(e.id, tri);
+  var totalMensalAntigo = getTotalMensal(e.id, tri);
+  var totalProd = totalModalidades > 0 ? totalModalidades : (totalMensalAntigo > 0 ? totalMensalAntigo : (parseFloat(prod.producao)||0));
+  
   var pct = meta>0 ? Math.round(Math.min(totalProd/meta, 1)*100) : 0;
   var fr = faixaRes(pct);
   var canEdit = (editor || (modoGestor && gestorLogado));
@@ -2216,86 +2291,363 @@ function renderResultadosForTri(idx, tri){
     +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:14px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
 
   if(canEdit){
+    // Input da meta
     h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
     
-    // 3 meses, cada um com 4 semanas
-    for(var mi=0;mi<3;mi++){
-      var mesIdx = mi+1;
+    // 3 meses, cada um com TABELA: 4 modalidades × 4 semanas
+    for(var mi = 0; mi < 3; mi++){
+      var mesIdx = mi + 1;
       var mesNome = meses[mi].nome;
-      var totalMes = getProducaoMensal(e.id, tri, mesIdx);
-      var fechado = mesFechado(e.id, tri, mesIdx);
+      var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+      // Mês fechado se total > 0 em todas as semanas
+      var fechado = true;
+      for(var s = 1; s <= 4; s++){
+        if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
+      }
+      
       var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
       var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
-      var mesStatus = fechado ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
+      var mesStatus = fechado 
+        ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
+        : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
       
       h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-          +'<span style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+          +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
           +'<div style="display:flex;align-items:center;gap:8px;">'
             +mesStatus
             +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
           +'</div>'
         +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">';
+        +'<div style="overflow-x:auto;">'
+        +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
+        +'<thead><tr style="background:var(--bg);">'
+        +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
+        +'</tr></thead>'
+        +'<tbody>';
       
-      for(var si=1;si<=4;si++){
-        var semVal = getProducaoSemanal(e.id, tri, mesIdx, si);
-        h += '<div class="field-grp" style="margin:0;"><div class="field-lbl" style="font-size:9px;">Sem '+si+'</div>'
-          +'<input class="field-in pSemInput" data-mes="'+mesIdx+'" data-sem="'+si+'" type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" style="font-size:12px;padding:6px 8px;"></div>';
+      // Uma linha por modalidade
+      MODALIDADES.forEach(function(mod, modIdx){
+        var totalMod = 0;
+        h += '<tr>'
+          +'<td style="padding:6px;border:1px solid var(--border);font-weight:600;color:'+CORES_MODALIDADES[mod]+';font-size:11px;">'+mod+'</td>';
+        
+        for(var si = 1; si <= 4; si++){
+          var semVal = getProducaoSemanalModalidade(e.id, tri, mesIdx, si, modIdx);
+          totalMod += semVal;
+          h += '<td style="padding:3px;border:1px solid var(--border);">'
+            +'<input class="pModInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
+            +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '
+            +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);">'
+            +'</td>';
+        }
+        h += '<td class="pModTotalMod-'+mesIdx+'-'+modIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--bg);font-weight:600;text-align:center;font-size:11px;">'+fmtMilhar(totalMod)+'</td>'
+          +'</tr>';
+      });
+      
+      // Linha de TOTAL (semanas e mês)
+      h += '<tr style="background:var(--bg);font-weight:700;">'
+        +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
+      for(var si2 = 1; si2 <= 4; si2++){
+        var semTotal = getTotalSemanaModalidades(e.id, tri, mesIdx, si2);
+        h += '<td class="pModTotalSem-'+mesIdx+'-'+si2+'" style="padding:6px;border:1px solid var(--border);text-align:center;font-size:11px;">'+fmtMilhar(semTotal)+'</td>';
       }
-      h += '</div></div>';
+      h += '<td class="pModTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalMes)+'</td>'
+        +'</tr>'
+        +'</tbody></table></div></div>';
     }
     
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><button class="btn-obs" id="btnSalvarResultado">Salvar</button><span class="obs-saved" id="resultadoSaved">✓ Salvo</span></div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">'
+      +'<button class="btn-obs" id="btnSalvarResultado">Salvar</button>'
+      +'<span class="obs-saved" id="resultadoSaved">✓ Salvo</span>'
+      +'</div>';
+    
+    // ─── INDICADORES POR MODALIDADE ───
+    h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade</div>'
+      +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
+      +'</div>';
+    
+    // ─── GRÁFICO DE PIZZA ───
+    h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas</div>'
+      +'<div id="pGraficoMod"></div>'
+      +'</div>';
+    
   } else {
-    // Visualização readonly para quem não edita
-    for(var mi=0;mi<3;mi++){
-      var mesIdx2 = mi+1;
-      var totalMes2 = getProducaoMensal(e.id, tri, mesIdx2);
-      var fechado2 = mesFechado(e.id, tri, mesIdx2);
+    // Visualização readonly
+    for(var mi3 = 0; mi3 < 3; mi3++){
+      var mesIdx3 = mi3 + 1;
+      var totalMes3 = getTotalMesModalidades(e.id, tri, mesIdx3);
       h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi].nome+'</span>'
-        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes2)+(fechado2?' ✓':'')+'</span></div>';
+        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi3].nome+'</span>'
+        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes3)+'</span></div>';
     }
   }
   h += '<div id="pHistoricoTri"></div>';
   el.innerHTML = h;
   
   loadSnapshotsHistory(e.id);
-  // Auto-format
+  
+  // Auto-format meta
   var metaInp = document.getElementById('pMetaInput');
-  if(metaInp) metaInp.addEventListener('input', function(){ var v=this.value.replace(/[^0-9]/g,''); this.value=v?parseInt(v).toLocaleString('pt-BR'):''; });
-  document.querySelectorAll('.pSemInput').forEach(function(inp){
-    inp.addEventListener('input', function(){ var v=this.value.replace(/[^0-9]/g,''); this.value=v?parseInt(v).toLocaleString('pt-BR'):''; });
+  if(metaInp) metaInp.addEventListener('input', function(){
+    var v = this.value.replace(/[^0-9]/g,'');
+    this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
   });
-
+  
+  // Auto-format modalidades + atualização em tempo real
+  document.querySelectorAll('.pModInput').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var v = this.value.replace(/[^0-9]/g,'');
+      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
+      atualizarTotaisModalidades(idx, tri);
+    });
+  });
+  
+  // Renderizar indicadores e gráfico iniciais
+  if(canEdit){
+    renderIndicadoresModalidades(idx, tri);
+    renderGraficoPizzaModalidades(idx, tri);
+  }
+  
+  // Botão Salvar
   var btn = document.getElementById('btnSalvarResultado');
   if(btn){
     btn.addEventListener('click', async function(){
       var newMeta = parseMilhar((document.getElementById('pMetaInput')||{}).value)||0;
       await saveMetaTri(e.id, tri, newMeta);
-      var semInputs = document.querySelectorAll('.pSemInput');
-      var total = 0;
-      for(var i=0;i<semInputs.length;i++){
-        var val = parseMilhar(semInputs[i].value)||0;
-        var mesI = parseInt(semInputs[i].getAttribute('data-mes'));
-        var semI = parseInt(semInputs[i].getAttribute('data-sem'));
-        await saveProducaoSemanal(e.id, tri, mesI, semI, val);
-        total += val;
+      
+      // Salvar todas as modalidades
+      var modInputs = document.querySelectorAll('.pModInput');
+      var totalGeral = 0;
+      for(var i = 0; i < modInputs.length; i++){
+        var val = parseMilhar(modInputs[i].value) || 0;
+        var mesI = parseInt(modInputs[i].getAttribute('data-mes'));
+        var semI = parseInt(modInputs[i].getAttribute('data-sem'));
+        var modI = parseInt(modInputs[i].getAttribute('data-mod'));
+        await saveProducaoSemanalModalidade(e.id, tri, mesI, semI, modI, val);
+        totalGeral += val;
       }
-      await saveProducaoTri(e.id, tri, total);
+      
+      // Atualizar total trimestral
+      await saveProducaoTri(e.id, tri, totalGeral);
+      
       if(!e.perfil) e.perfil = {};
       e.perfil.ultima_atualizacao_prod = new Date().toISOString().slice(0,10);
       await saveEstagiario(e);
       await salvarSnapshot(e.id, tri);
+      
       var sv = document.getElementById('resultadoSaved');
       if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
+      
       renderAvaliacao(idx);
       renderResultadosForTri(idx, tri);
       renderCards();
     });
   }
 }
+
+// Atualiza totais (semanas, mês, modalidade) enquanto o gestor digita
+function atualizarTotaisModalidades(idx, tri){
+  var e = S.ests[idx];
+  
+  // Coletar todos os valores dos inputs em memória
+  var valores = {}; // valores[mesIdx][semIdx][modIdx] = valor
+  for(var mi = 1; mi <= 3; mi++){
+    valores[mi] = {};
+    for(var si = 1; si <= 4; si++){
+      valores[mi][si] = {};
+      for(var modI = 0; modI < 4; modI++){
+        var inp = document.querySelector('.pModInput[data-mes="'+mi+'"][data-sem="'+si+'"][data-mod="'+modI+'"]');
+        valores[mi][si][modI] = inp ? (parseMilhar(inp.value)||0) : 0;
+      }
+    }
+  }
+  
+  // Atualizar totais por modalidade (por mês)
+  for(var mi2 = 1; mi2 <= 3; mi2++){
+    for(var modI2 = 0; modI2 < 4; modI2++){
+      var totalMod = 0;
+      for(var si2 = 1; si2 <= 4; si2++){
+        totalMod += valores[mi2][si2][modI2];
+      }
+      var elTot = document.querySelector('.pModTotalMod-'+mi2+'-'+modI2);
+      if(elTot) elTot.textContent = fmtMilhar(totalMod);
+    }
+  }
+  
+  // Atualizar totais por semana
+  for(var mi3 = 1; mi3 <= 3; mi3++){
+    for(var si3 = 1; si3 <= 4; si3++){
+      var totalSem = 0;
+      for(var modI3 = 0; modI3 < 4; modI3++){
+        totalSem += valores[mi3][si3][modI3];
+      }
+      var elSem = document.querySelector('.pModTotalSem-'+mi3+'-'+si3);
+      if(elSem) elSem.textContent = fmtMilhar(totalSem);
+    }
+  }
+  
+  // Atualizar total do mês
+  for(var mi4 = 1; mi4 <= 3; mi4++){
+    var totalMes = 0;
+    for(var si4 = 1; si4 <= 4; si4++){
+      for(var modI4 = 0; modI4 < 4; modI4++){
+        totalMes += valores[mi4][si4][modI4];
+      }
+    }
+    var elMes = document.querySelector('.pModTotalMes-'+mi4);
+    if(elMes) elMes.textContent = fmtMilhar(totalMes);
+  }
+  
+  // Atualizar indicadores e gráfico em tempo real
+  renderIndicadoresModalidadesFromInputs(idx, tri, valores);
+  renderGraficoPizzaModalidadesFromInputs(idx, tri, valores);
+}
+
+// Renderiza os 4 cards de indicadores por modalidade
+function renderIndicadoresModalidades(idx, tri){
+  var el = document.getElementById('pIndicadoresMod');
+  if(!el) return;
+  var e = S.ests[idx];
+  var prod = getProducaoTri(e.id, tri);
+  var meta = parseFloat(prod.meta) || 0;
+  
+  var html = '';
+  MODALIDADES.forEach(function(mod, modIdx){
+    var totalMod = getTotalTrimestreModalidade(e.id, tri, modIdx);
+    var pct = meta > 0 ? Math.round((totalMod / meta) * 100) : 0;
+    var pctFill = Math.min(pct, 100);
+    var cor = CORES_MODALIDADES[mod];
+    
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid '+cor+';border-radius:6px;padding:10px;">'
+      +'<div style="font-size:10px;color:var(--ink3);font-weight:600;margin-bottom:4px;">'+mod+'</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">R$ '+fmtMilhar(totalMod)+'</div>'
+      +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:4px;">'
+      +'<div style="width:'+pctFill+'%;height:100%;background:'+cor+';transition:width .3s;"></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--ink3);">'+pct+'% da meta</div>'
+      +'</div>';
+  });
+  
+  el.innerHTML = html;
+}
+
+// Versão que recebe valores em memória (uso em tempo real ao digitar)
+function renderIndicadoresModalidadesFromInputs(idx, tri, valores){
+  var el = document.getElementById('pIndicadoresMod');
+  if(!el) return;
+  var e = S.ests[idx];
+  var prod = getProducaoTri(e.id, tri);
+  var meta = parseFloat(prod.meta) || 0;
+  
+  var html = '';
+  MODALIDADES.forEach(function(mod, modIdx){
+    var totalMod = 0;
+    for(var mi = 1; mi <= 3; mi++){
+      for(var si = 1; si <= 4; si++){
+        totalMod += valores[mi][si][modIdx] || 0;
+      }
+    }
+    var pct = meta > 0 ? Math.round((totalMod / meta) * 100) : 0;
+    var pctFill = Math.min(pct, 100);
+    var cor = CORES_MODALIDADES[mod];
+    
+    html += '<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid '+cor+';border-radius:6px;padding:10px;">'
+      +'<div style="font-size:10px;color:var(--ink3);font-weight:600;margin-bottom:4px;">'+mod+'</div>'
+      +'<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">R$ '+fmtMilhar(totalMod)+'</div>'
+      +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:4px;">'
+      +'<div style="width:'+pctFill+'%;height:100%;background:'+cor+';transition:width .3s;"></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:var(--ink3);">'+pct+'% da meta</div>'
+      +'</div>';
+  });
+  
+  el.innerHTML = html;
+}
+
+// Renderiza o gráfico de pizza com a distribuição
+function renderGraficoPizzaModalidades(idx, tri){
+  var el = document.getElementById('pGraficoMod');
+  if(!el) return;
+  var e = S.ests[idx];
+  
+  var totais = MODALIDADES.map(function(mod, modIdx){
+    return {nome: mod, valor: getTotalTrimestreModalidade(e.id, tri, modIdx), cor: CORES_MODALIDADES[mod]};
+  });
+  
+  renderPizza(el, totais);
+}
+
+// Versão que recebe valores em memória
+function renderGraficoPizzaModalidadesFromInputs(idx, tri, valores){
+  var el = document.getElementById('pGraficoMod');
+  if(!el) return;
+  
+  var totais = MODALIDADES.map(function(mod, modIdx){
+    var total = 0;
+    for(var mi = 1; mi <= 3; mi++){
+      for(var si = 1; si <= 4; si++){
+        total += valores[mi][si][modIdx] || 0;
+      }
+    }
+    return {nome: mod, valor: total, cor: CORES_MODALIDADES[mod]};
+  });
+  
+  renderPizza(el, totais);
+}
+
+// Renderiza o SVG do gráfico de pizza
+function renderPizza(el, totais){
+  var total = totais.reduce(function(sum, t){ return sum + t.valor; }, 0);
+  
+  if(total === 0){
+    el.innerHTML = '<div style="font-size:12px;color:var(--ink3);font-style:italic;padding:10px 0;">Sem vendas registradas ainda.</div>';
+    return;
+  }
+  
+  // Calcular offsets do pizza chart
+  var offset = 0;
+  var circunferencia = 283; // 2 * π * 45 (aprox.)
+  
+  var pieSegments = '';
+  var legendItems = '';
+  
+  totais.forEach(function(t){
+    var pct = (t.valor / total) * 100;
+    var arco = (pct / 100) * circunferencia;
+    
+    if(arco > 0){
+      pieSegments += '<circle cx="60" cy="60" r="45" fill="none" '
+        +'stroke="'+t.cor+'" stroke-width="22" '
+        +'stroke-dasharray="'+arco.toFixed(2)+' '+(circunferencia - arco).toFixed(2)+'" '
+        +'stroke-dashoffset="-'+offset.toFixed(2)+'" '
+        +'transform="rotate(-90 60 60)"/>';
+    }
+    
+    legendItems += '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;">'
+      +'<div style="width:12px;height:12px;border-radius:3px;background:'+t.cor+';flex-shrink:0;"></div>'
+      +'<div style="flex:1;"><div style="font-weight:500;color:var(--ink);">'+t.nome+'</div>'
+      +'<div style="font-size:10px;color:var(--ink3);">R$ '+fmtMilhar(t.valor)+' ('+Math.round(pct)+'%)</div>'
+      +'</div></div>';
+    
+    offset += arco;
+  });
+  
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center;">'
+    +'<svg viewBox="0 0 120 120" style="width:150px;height:150px;flex-shrink:0;">'
+    + pieSegments
+    +'</svg>'
+    +'<div style="flex:1;min-width:140px;">'+legendItems+'</div>'
+    +'</div>';
+}
+
 
 
 function renderPanelTrilha(idx){
@@ -2474,7 +2826,7 @@ function renderCards(){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
-    return '<div class="notion-card'+(panelIdx===ei?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
+    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
       +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
@@ -2491,7 +2843,7 @@ function renderCards(){
   document.getElementById('notionGrid').innerHTML='<div class="notion-grid">'+cards+'</div>';
   // attach click events
   document.querySelectorAll('.notion-card').forEach(function(card){
-    card.addEventListener('click',function(){ openPanel(parseInt(this.dataset.ei)); });
+    card.addEventListener('click',function(){ openPanel(this.dataset.eid); });
   });
 }
 
