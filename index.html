@@ -2295,14 +2295,33 @@ function renderResultadosForTri(idx, tri){
   var meta = parseFloat(prod.meta)||0;
   var meses = getMesesTrimestre(tri);
   
-  // Total produzido = soma das modalidades (NOVO) OU dados antigos por compatibilidade
+  // Detectar mês vigente
+  var mesVigenteNoTri = getMesVigenteEmTrimestre(tri);
+  
+  // Se pSelectedMesIdx nunca foi inicializado, usar mês vigente
+  if(pSelectedMesIdx === undefined || pSelectedMesIdx < 1 || pSelectedMesIdx > 3){
+    pSelectedMesIdx = mesVigenteNoTri;
+  }
+  
+  var mesIdx = pSelectedMesIdx; // Mês selecionado para exibição (1, 2 ou 3)
+  var mesNome = meses[mesIdx-1].nome;
+  var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+  
+  // Verificar se mês está fechado
+  var fechado = true;
+  for(var s = 1; s <= 4; s++){
+    if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
+  }
+  
+  var isVigente = (mesIdx === mesVigenteNoTri);
+  var canEdit = (editor || (modoGestor && gestorLogado)) && isVigente; // Só edita mês vigente
+  
+  // Total produzido (compatibilidade)
   var totalModalidades = getTotalTrimestreModalidades(e.id, tri);
   var totalMensalAntigo = getTotalMensal(e.id, tri);
   var totalProd = totalModalidades > 0 ? totalModalidades : (totalMensalAntigo > 0 ? totalMensalAntigo : (parseFloat(prod.producao)||0));
-  
   var pct = meta>0 ? Math.round(Math.min(totalProd/meta, 1)*100) : 0;
   var fr = faixaRes(pct);
-  var canEdit = (editor || (modoGestor && gestorLogado));
   
   // KPI cards
   var h = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
@@ -2312,118 +2331,140 @@ function renderResultadosForTri(idx, tri){
     +'</div>'
     +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:14px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
 
+  // Navegação de meses + Indicador de mês vigente
+  h += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;">'
+    +'<button id="btnMesAnterior" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--or);">← Anterior</button>'
+    +'<div style="text-align:center;flex:1;">'
+      +'<div style="font-size:16px;font-weight:700;color:var(--ink);">'+mesNome+'</div>'
+      +'<div style="font-size:11px;color:var(--ink3);margin-top:2px;">'
+        +(isVigente ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-weight:600;">● Mês vigente</span>' 
+                   : (mesIdx > mesVigenteNoTri ? '<span style="color:var(--ink3);">Mês futuro</span>' 
+                                                 : '<span style="color:#F59E0B;font-weight:600;">⚠ Mês fechado (para leitura)</span>'))
+      +'</div>'
+    +'</div>'
+    +'<button id="btnMesProximo" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--or);">Próximo →</button>'
+    +'</div>';
+
+  // Meta input (apenas se for mês vigente)
   if(canEdit){
-    // Input da meta
     h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
+  }
+  
+  // Card do mês
+  var mesCorFundo = isVigente ? 'var(--bg)' : '#F3F4F6';
+  var mesCorBorda = isVigente ? 'var(--border)' : '#D1D5DB';
+  var mesStatus = isVigente ? '<span style="color:var(--or);font-size:10px;font-weight:600;">✎ Editável</span>' 
+                             : '<span style="color:#6B7280;font-size:10px;">Leitura apenas</span>';
+  
+  h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;background:'+mesCorFundo+';margin-bottom:10px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+      +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+' - Modalidades</span>'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+        +mesStatus
+        +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
+      +'</div>'
+    +'</div>'
+    +'<div style="overflow-x:auto;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
+    +'<thead><tr style="background:var(--bg);">'
+    +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
+    +'</tr></thead>'
+    +'<tbody>';
+  
+  // Linhas das modalidades
+  MODALIDADES.forEach(function(mod, modIdx){
+    var totalMod = 0;
+    h += '<tr>'
+      +'<td style="padding:6px;border:1px solid var(--border);font-weight:600;color:'+CORES_MODALIDADES[mod]+';font-size:11px;">'+mod+'</td>';
     
-    // 3 meses, cada um com TABELA: 4 modalidades × 4 semanas
-    for(var mi = 0; mi < 3; mi++){
-      var mesIdx = mi + 1;
-      var mesNome = meses[mi].nome;
-      var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
-      // Mês fechado se total > 0 em todas as semanas
-      var fechado = true;
-      for(var s = 1; s <= 4; s++){
-        if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
-      }
-      
-      var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
-      var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
-      var mesStatus = fechado 
-        ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
-        : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
-      
-      h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-          +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
-          +'<div style="display:flex;align-items:center;gap:8px;">'
-            +mesStatus
-            +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
-          +'</div>'
-        +'</div>'
-        +'<div style="overflow-x:auto;">'
-        +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
-        +'<thead><tr style="background:var(--bg);">'
-        +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
-        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
-        +'</tr></thead>'
-        +'<tbody>';
-      
-      // Uma linha por modalidade
-      MODALIDADES.forEach(function(mod, modIdx){
-        var totalMod = 0;
-        h += '<tr>'
-          +'<td style="padding:6px;border:1px solid var(--border);font-weight:600;color:'+CORES_MODALIDADES[mod]+';font-size:11px;">'+mod+'</td>';
-        
-        for(var si = 1; si <= 4; si++){
-          var semVal = getProducaoSemanalModalidade(e.id, tri, mesIdx, si, modIdx);
-          totalMod += semVal;
-          h += '<td style="padding:3px;border:1px solid var(--border);">'
-            +'<input class="pModInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
-            +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '
-            +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);">'
-            +'</td>';
-        }
-        h += '<td class="pModTotalMod-'+mesIdx+'-'+modIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--bg);font-weight:600;text-align:center;font-size:11px;">'+fmtMilhar(totalMod)+'</td>'
-          +'</tr>';
-      });
-      
-      // Linha de TOTAL (semanas e mês)
-      h += '<tr style="background:var(--bg);font-weight:700;">'
-        +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
-      for(var si2 = 1; si2 <= 4; si2++){
-        var semTotal = getTotalSemanaModalidades(e.id, tri, mesIdx, si2);
-        h += '<td class="pModTotalSem-'+mesIdx+'-'+si2+'" style="padding:6px;border:1px solid var(--border);text-align:center;font-size:11px;">'+fmtMilhar(semTotal)+'</td>';
-      }
-      h += '<td class="pModTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalMes)+'</td>'
-        +'</tr>'
-        +'</tbody></table></div></div>';
+    for(var si = 1; si <= 4; si++){
+      var semVal = getProducaoSemanalModalidade(e.id, tri, mesIdx, si, modIdx);
+      totalMod += semVal;
+      var inputDisabled = !canEdit ? 'disabled' : '';
+      h += '<td style="padding:3px;border:1px solid var(--border);">'
+        +'<input class="pModInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
+        +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '+inputDisabled+' '
+        +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);'+(inputDisabled?'opacity:.6;cursor:not-allowed;':'')+';">'
+        +'</td>';
     }
-    
-    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">'
+    h += '<td class="pModTotalMod-'+mesIdx+'-'+modIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--bg);font-weight:600;text-align:center;font-size:11px;">'+fmtMilhar(totalMod)+'</td>'
+      +'</tr>';
+  });
+  
+  // Linha de totais
+  h += '<tr style="background:var(--bg);font-weight:700;">'
+    +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
+  for(var si2 = 1; si2 <= 4; si2++){
+    var semTotal = getTotalSemanaModalidades(e.id, tri, mesIdx, si2);
+    h += '<td class="pModTotalSem-'+mesIdx+'-'+si2+'" style="padding:6px;border:1px solid var(--border);text-align:center;font-size:11px;">'+fmtMilhar(semTotal)+'</td>';
+  }
+  h += '<td class="pModTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalMes)+'</td>'
+    +'</tr>'
+    +'</tbody></table></div></div>';
+  
+  // Botões de salvar (apenas mês vigente)
+  if(canEdit){
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
       +'<button class="btn-obs" id="btnSalvarResultado">Salvar</button>'
       +'<span class="obs-saved" id="resultadoSaved">✓ Salvo</span>'
       +'</div>';
-    
-    // ─── INDICADORES POR MODALIDADE ───
-    h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade</div>'
-      +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
-      +'</div>';
-    
-    // ─── GRÁFICO DE PIZZA ───
-    h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas</div>'
-      +'<div id="pGraficoMod"></div>'
-      +'</div>';
-    
-  } else {
-    // Visualização readonly
-    for(var mi3 = 0; mi3 < 3; mi3++){
-      var mesIdx3 = mi3 + 1;
-      var totalMes3 = getTotalMesModalidades(e.id, tri, mesIdx3);
-      h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi3].nome+'</span>'
-        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes3)+'</span></div>';
-    }
   }
+  
+  // Indicadores por modalidade
+  h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
+    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade (trimestre)</div>'
+    +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
+    +'</div>';
+  
+  // Gráfico de pizza
+  h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
+    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas (trimestre)</div>'
+    +'<div id="pGraficoMod"></div>'
+    +'</div>';
+  
   h += '<div id="pHistoricoTri"></div>';
+  
   el.innerHTML = h;
+  
+  // Listeners de navegação
+  var btnAnt = document.getElementById('btnMesAnterior');
+  var btnProx = document.getElementById('btnMesProximo');
+  
+  if(btnAnt){
+    btnAnt.disabled = (mesIdx === 1);
+    btnAnt.style.opacity = btnAnt.disabled ? '0.5' : '1';
+    btnAnt.addEventListener('click', function(){
+      if(mesIdx > 1){
+        pSelectedMesIdx = mesIdx - 1;
+        renderResultadosForTri(idx, tri);
+      }
+    });
+  }
+  
+  if(btnProx){
+    btnProx.disabled = (mesIdx === 3);
+    btnProx.style.opacity = btnProx.disabled ? '0.5' : '1';
+    btnProx.addEventListener('click', function(){
+      if(mesIdx < 3){
+        pSelectedMesIdx = mesIdx + 1;
+        renderResultadosForTri(idx, tri);
+      }
+    });
+  }
   
   loadSnapshotsHistory(e.id);
   
-  // Auto-format meta
   var metaInp = document.getElementById('pMetaInput');
   if(metaInp) metaInp.addEventListener('input', function(){
     var v = this.value.replace(/[^0-9]/g,'');
     this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
   });
   
-  // Auto-format modalidades + atualização em tempo real
   document.querySelectorAll('.pModInput').forEach(function(inp){
     inp.addEventListener('input', function(){
       var v = this.value.replace(/[^0-9]/g,'');
@@ -2432,20 +2473,17 @@ function renderResultadosForTri(idx, tri){
     });
   });
   
-  // Renderizar indicadores e gráfico iniciais
   if(canEdit){
     renderIndicadoresModalidades(idx, tri);
     renderGraficoPizzaModalidades(idx, tri);
   }
   
-  // Botão Salvar
   var btn = document.getElementById('btnSalvarResultado');
   if(btn){
     btn.addEventListener('click', async function(){
       var newMeta = parseMilhar((document.getElementById('pMetaInput')||{}).value)||0;
       await saveMetaTri(e.id, tri, newMeta);
       
-      // Salvar todas as modalidades
       var modInputs = document.querySelectorAll('.pModInput');
       var totalGeral = 0;
       for(var i = 0; i < modInputs.length; i++){
@@ -2457,7 +2495,6 @@ function renderResultadosForTri(idx, tri){
         totalGeral += val;
       }
       
-      // Atualizar total trimestral
       await saveProducaoTri(e.id, tri, totalGeral);
       
       if(!e.perfil) e.perfil = {};
