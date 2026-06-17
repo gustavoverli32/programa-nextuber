@@ -3,15 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#EC7000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Nextuber">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="pwa-icons/apple-touch-icon.png">
-<title>Nextuber · A próxima geração de Itubers</title>
+<title>Forma+ · Formação que evolui</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -530,21 +523,27 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="data:image/webp;base64,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" alt="Nextuber" style="width:140px;display:block;margin:0 auto;border-radius:8px;">
+    <svg width="64" height="64" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+      <rect x="14" y="14" width="11" height="62" rx="2" fill="#EC7000"/>
+      <rect x="25" y="14" width="31" height="11" rx="2" fill="#EC7000"/>
+      <rect x="25" y="39" width="22" height="11" rx="2" fill="#EC7000"/>
+      <rect x="58.5" y="51" width="5" height="20" rx="1" fill="#EC7000"/>
+      <rect x="51" y="58.5" width="20" height="5" rx="1" fill="#EC7000"/>
+    </svg>
+    <div class="sub" style="text-align:center;">
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;color:var(--ink);margin-top:8px;letter-spacing:-.01em;">Forma<span style="color:var(--or);font-weight:500;">+</span></div>
+      <div style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-top:4px;">Formação que evolui</div>
+    </div>
   </div>
   <div class="nav-section">
     <div class="nav-lbl">Painel</div>
     <div class="nav-item active" data-page="overview">◈ Página inicial</div>
     <div class="nav-item" data-page="estagiarios" data-tutora="only">◎ Acompanhamento</div>
-    <div class="nav-item" data-page="cadastro" data-tutora="only" data-gga="show">◫ Cadastro</div>
+    <div class="nav-item" data-page="cadastro" data-tutora="only">◫ Cadastro</div>
   </div>
   <div class="nav-section">
     <div class="nav-lbl">Programa</div>
     <div class="nav-item" data-page="trilhas" data-tutora="only">◑ Trilhas</div>
-  </div>
-  <div class="nav-section" data-tutora="only">
-    <div class="nav-lbl">Sistema</div>
-    <div class="nav-item" data-page="configuracoes" data-tutora="only">⚙ Configurações</div>
   </div>
   <div class="sb-progress" data-tutora="only">
     <div class="sb-progress-row"><span>PROGRESSO</span><span id="pctLbl">0%</span></div>
@@ -562,15 +561,21 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div class="mob-hamburger" id="hamburger">
       <span></span><span></span><span></span>
     </div>
-    <span class="mob-topbar-title">Nextuber</span>
+    <span class="mob-topbar-title">Forma+</span>
     <button class="mob-mode-btn" id="mobileModeBtn">Login</button>
   </div>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
   <div class="drawer" id="drawer">
     <div class="drawer-header">
-      <img src="data:image/webp;base64,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" alt="Nextuber" style="height:48px;display:block;border-radius:6px;">
-      <div class="drawer-sub">Nextuber · A próxima geração de Itubers</div>
+      <svg width="48" height="48" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+      <rect x="14" y="14" width="11" height="62" rx="2" fill="#EC7000"/>
+      <rect x="25" y="14" width="31" height="11" rx="2" fill="#EC7000"/>
+      <rect x="25" y="39" width="22" height="11" rx="2" fill="#EC7000"/>
+      <rect x="58.5" y="51" width="5" height="20" rx="1" fill="#EC7000"/>
+      <rect x="51" y="58.5" width="20" height="5" rx="1" fill="#EC7000"/>
+    </svg>
+      <div class="drawer-sub">Formação de Estagiários 2.0 · Estágio Comercial</div>
     </div>
     <div class="drawer-nav">
       <div class="drawer-section-lbl">Painel</div>
@@ -582,7 +587,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
         <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3.5"/><path d="M2 20c0-4 3.1-7 7-7s7 3 7 7"/><circle cx="18" cy="8" r="2.5"/><path d="M22 20c0-3-2-5-4-5"/></svg>
         Estagiários
       </div>
-      <div class="drawer-item" data-page="cadastro" data-tutora="only" data-gga="show">
+      <div class="drawer-item" data-page="cadastro" data-tutora="only">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         Cadastro
       </div>
@@ -590,11 +595,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="drawer-item" data-page="trilhas" data-tutora="only">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="18" r="2.5"/></svg>
         Trilhas
-      </div>
-      <div class="drawer-section-lbl" data-tutora="only">Sistema</div>
-      <div class="drawer-item" data-page="configuracoes" data-tutora="only">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8l2.8-2.8M17 7l2.8-2.8"/></svg>
-        Configurações
       </div>
       </div>
     <div class="drawer-footer">
@@ -611,7 +611,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div style="background:linear-gradient(135deg,var(--or),var(--or-d));color:#fff;border-radius:var(--r);padding:24px 26px;box-shadow:0 6px 24px rgba(236,112,0,.18);">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;">
           <div style="flex:1;min-width:240px;">
-            <div id="bannerOver" style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.85;margin-bottom:6px;">Nextuber</div>
+            <div id="bannerOver" style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.85;margin-bottom:6px;">Formação de Estagiários 2.0</div>
             <h2 id="bannerTitulo" style="font-family:'DM Serif Display',serif;font-size:24px;line-height:1.2;margin-bottom:10px;">Desenvolvendo o futuro comercial do Itaú</h2>
             <p id="bannerDesc" style="font-size:13.5px;line-height:1.7;opacity:.95;max-width:680px;">Programa estruturado de 6 meses para formar estagiários comerciais com excelência técnica, comportamental e comprometimento com o cliente. Acompanhamento contínuo, trilhas adaptadas e desenvolvimento orientado por dados.</p>
           </div>
@@ -687,12 +687,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
     <!-- Content (shown when tutora) -->
     <div id="estagContent" style="display:none;">
-      <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div><h1>Acompanhamento <em>individual</em></h1><p>Toque no card para ver o perfil e adicionar observações.</p></div>
-        <button id="btnExportExcel" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;margin-top:6px;white-space:nowrap;" title="Exportar resultados para Excel">
-          <span style="font-size:16px;">📊</span> Exportar Excel
-        </button>
-      </div>
+      <div class="ph"><h1>Acompanhamento <em>individual</em></h1><p>Toque no card para ver o perfil e adicionar observações.</p></div>
       <div id="notionGrid"></div>
     </div>
 
@@ -716,46 +711,18 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <input class="field-in" type="text" id="cadNome" placeholder="Ex: João Silva" maxlength="60">
         </div>
         <div class="field-grp">
+          <div class="field-lbl">Idade</div>
+          <input class="field-in" type="number" id="cadIdade" placeholder="Ex: 20" min="16" max="35" inputmode="numeric">
+        </div>
+        <div class="field-grp">
           <div class="field-lbl">Funcional (9 dígitos)</div>
           <input class="field-in" type="text" id="cadFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
         </div>
-        <div class="field-grp">
+        <div class="field-grp" style="grid-column:1/-1;">
           <div class="field-lbl">Data de início</div>
           <input class="field-in" type="date" id="cadInicio">
         </div>
-        <div class="field-grp">
-          <div class="field-lbl">Funcional GA</div>
-          <input class="field-in" type="text" id="cadGAFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
-        </div>
-        <div class="field-grp">
-          <div class="field-lbl">Funcional GGA</div>
-          <input class="field-in" type="text" id="cadGGAFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
-        </div>
-        <div class="field-grp">
-          <div class="field-lbl">Certificação</div>
-          <select class="field-in" id="cadCertificacao" style="cursor:pointer;">
-            <option value="">Nenhuma</option>
-            <option value="CPA">CPA</option>
-            <option value="C-PRO R">C-PRO R</option>
-            <option value="C-PRO I">C-PRO I</option>
-          </select>
-        </div>
-        <div class="field-grp" style="grid-column:1/-1;">
-          <div class="field-lbl">Mês de aniversário</div>
-          <div style="display:flex;gap:8px;">
-            <select class="field-in" id="cadAnivDia" style="cursor:pointer;flex:1;">
-              <option value="">Dia</option>
-              <script>for(var _d=1;_d<=31;_d++) document.write('<option value="'+_d+'">'+_d+'</option>');</script>
-            </select>
-            <select class="field-in" id="cadAnivMes" style="cursor:pointer;flex:1;">
-              <option value="">Mês</option>
-              <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-              <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
-              <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
-              <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-            </select>
-          </div>
-        </div>
+        <div class="field-grp" style="grid-column:1/-1;"><div class="field-lbl">Funcional do gestor</div><input class="field-in" type="text" id="cadGestorFunc" placeholder="000000000" maxlength="9" inputmode="numeric"></div>
       </div>
       <div class="cad-single-footer">
         <button class="btn-cad-add" id="cadAddBtn">+ Adicionar estagiário</button>
@@ -808,33 +775,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div id="trilhaContent"></div>
   </section>
 
-  <!-- CONFIGURAÇÕES -->
-  <section id="page-configuracoes" class="page">
-    <div class="ph"><h1>Configurações</h1><p>Ajustes gerais do programa Nextuber.</p></div>
-    
-    <div style="max-width:600px;">
-      <!-- Recorrência de produção -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:18px;">⏰</span>
-          <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin:0;">Prazo para atualização de produção</h3>
-        </div>
-        <p style="font-size:12px;color:var(--ink3);margin:8px 0 14px;">Defina a data limite para os gestores atualizarem a produção dos estagiários. Quando o prazo se aproximar (2 dias antes), os cards ficarão amarelos. No dia do vencimento, ficarão vermelhos.</p>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <input type="date" id="cfgPrazoData" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;">
-          <button class="btn-obs" id="btnCfgSalvarPrazo">Definir prazo</button>
-          <span class="obs-saved" id="cfgPrazoSaved">✓ Salvo</span>
-        </div>
-        <div id="cfgPrazoAtual" style="margin-top:12px;font-size:12px;color:var(--ink3);"></div>
-      </div>
-
-      <!-- Placeholder para futuras configs -->
-      <div style="background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--ink3);font-size:13px;">
-        Mais configurações em breve.
-      </div>
-    </div>
-  </section>
-
 </main>
 </div>
 
@@ -852,14 +792,10 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   <div class="panel-body">
     <div class="psec">
       <div class="psec-ttl">Informações</div>
+      <div class="prow"><span class="prow-lbl">Idade</span><span class="prow-val" id="pIdade">—</span></div>
       <div class="prow"><span class="prow-lbl">Funcional</span><span class="prow-val" id="pFunc" style="font-family:monospace">—</span></div>
       <div class="prow"><span class="prow-lbl">Início</span><span class="prow-val" id="pInicio">—</span></div>
       <div class="prow"><span class="prow-lbl">Tempo no programa</span><span class="prow-val" id="pTempo">—</span></div>
-      <div class="prow"><span class="prow-lbl">GA</span><span class="prow-val" id="pGA">—</span></div>
-      <div class="prow"><span class="prow-lbl">GGA</span><span class="prow-val" id="pGGA">—</span></div>
-      <div class="prow"><span class="prow-lbl">Certificação</span><span class="prow-val" id="pCertificacao">—</span></div>
-      <div class="prow"><span class="prow-lbl">Aniversário</span><span class="prow-val" id="pNascimento">—</span></div>
-      <div class="prow"><span class="prow-lbl">Última atualização de produção</span><span class="prow-val" id="pUltimaAtualizacao">—</span></div>
     </div>
     <div class="psec psec-full">
       <div class="psec-ttl">Trilha de aprendizado</div>
@@ -869,6 +805,30 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div class="psec">
       <div class="psec-ttl">Avaliação</div>
       <div id="pAvaliacao"></div>
+    </div>
+
+    <!-- PAPÉIS E RESPONSABILIDADES -->
+    <div class="psec">
+      <div class="psec-ttl">Papéis e responsabilidades</div>
+      <div style="background:#DCFCE7;border-left:3px solid #16A34A;border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:12px 14px;margin-bottom:8px;">
+        <div style="font-size:10px;font-weight:600;color:#14532D;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">✓ Estagiário deve</div>
+        <div style="font-size:12px;color:#166534;display:flex;flex-direction:column;gap:4px;">
+          <span>• Realizar cursos obrigatórios</span>
+          <span>• Demonstrar interesse e iniciativa</span>
+          <span>• Atuar dentro do escopo</span>
+          <span>• Buscar aprendizado e tirar dúvidas</span>
+          <span>• Atender o cliente com empatia</span>
+        </div>
+      </div>
+      <div style="background:#FEE2E2;border-left:3px solid #DC2626;border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:10px;font-weight:600;color:#7F1D1D;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;">✕ Não pode</div>
+        <div style="font-size:12px;color:#991B1B;display:flex;flex-direction:column;gap:4px;">
+          <span>• Exceder jornada de trabalho</span>
+          <span>• Atuar fora do escopo</span>
+          <span>• Compartilhar senhas e informações</span>
+          <span>• Ofertar produtos inadequados</span>
+        </div>
+      </div>
     </div>
 
     <!-- RESULTADOS TRIMESTRAIS -->
@@ -976,7 +936,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 <!-- VER MAIS PROJETO -->
 <div class="login-ov" id="projetoOv">
   <div class="login-box" style="max-width:640px;max-height:85vh;overflow-y:auto;">
-    <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px;color:var(--or);">Nextuber</h3>
+    <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px;color:var(--or);">Formação de Estagiários 2.0</h3>
     <p style="font-size:12px;color:var(--ink3);margin-bottom:18px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;">Programa de desenvolvimento comercial</p>
 
     <div id="projetoConteudo" style="font-size:13.5px;color:var(--ink2);line-height:1.75;">
@@ -1090,7 +1050,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 <!-- LOGIN -->
 <div class="login-ov" id="loginOv">
   <div class="login-box">
-    <div class="login-logo"><img src="data:image/webp;base64,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" alt="Nextuber" style="width:48px;border-radius:8px;"><div class="login-brand"><span style="font-family:'DM Serif Display',serif;font-size:18px;">Nextuber</span><span>Acesso restrito</span></div></div>
+    <div class="login-logo"><svg width="40" height="40" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><rect x="14" y="14" width="11" height="62" rx="2" fill="#EC7000"/><rect x="25" y="14" width="31" height="11" rx="2" fill="#EC7000"/><rect x="25" y="39" width="22" height="11" rx="2" fill="#EC7000"/><rect x="58.5" y="51" width="5" height="20" rx="1" fill="#EC7000"/><rect x="51" y="58.5" width="20" height="5" rx="1" fill="#EC7000"/></svg><div class="login-brand"><span style="font-family:'DM Serif Display',serif;font-size:18px;">Forma<span style="color:var(--or);font-weight:500;">+</span></span><span>Acesso restrito</span></div></div>
     <div id="loginTipoWrap">
       <p style="font-size:13px;color:var(--ink3);margin-bottom:14px;">Como deseja acessar?</p>
       <button class="btn-login" id="btnEscolheTutora" style="margin-bottom:8px;">👩‍🏫 Sou tutora</button>
@@ -1115,20 +1075,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="lerr" id="loginGestorErr">Funcional ou senha incorretos.</div>
       <button class="btn-login" id="btnLoginGestor">Acessar</button>
       <button class="btn-cancel" id="btnVoltarGestor">← Voltar</button>
-    </div>
-  </div>
-</div>
-
-<!-- RENAME -->
-<!-- EXPORT EXCEL MODAL -->
-<div class="login-ov" id="exportOv">
-  <div class="login-box" style="max-width:420px;">
-    <h3 style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px;">📊 Exportar Resultados</h3>
-    <p style="font-size:13px;color:var(--ink3);margin-bottom:16px;">Selecione os trimestres que deseja incluir na planilha.</p>
-    <div id="exportTriCheckboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button class="btn-cancel" id="btnCancelExport" style="margin:0;">Cancelar</button>
-      <button class="btn-login" id="btnConfirmExport" style="margin:0;padding:8px 20px;">Exportar</button>
     </div>
   </div>
 </div>
@@ -1253,52 +1199,52 @@ var ML = ['Mês 1','Mês 2','Mês 3','Mês 4','Mês 5','Mês 6'];
 
 // ── TRILHAS DATA ───────────────────────────────────────────────────────────
 var TRILHAS = {
-  iniciante:{cor:'#EC7000',titulo:'Fase 1 | Decolar',
-    descricao:'Os primeiros 90 dias são sobre explorar, aprender e se conectar.',
-    frase:'"Chegou. Agora é hora de explorar."',
+  iniciante:{cor:'#EC7000',titulo:'Trilha Iniciante — Chegando com tudo',
+    descricao:'Os primeiros 90 dias são sobre entender o jogo antes de jogar.',
+    frase:'"Você está aqui para aprender. Perguntar faz parte."',
     topicos:[
-      {tema:'0 a 30 dias — Conexão com o Itaú',obj:'Conhecer a cultura e o jeito Itaú de fazer acontecer.',
-       acoes:['Conhecer nossa cultura e nosso jeito de fazer acontecer','Entender a dinâmica da agência e as principais ferramentas','Desenvolver organização, comunicação e postura profissional','Concluir as capacitações obrigatórias da jornada'],
+      {tema:'0 a 30 dias — Integração & Cultura',obj:'Entender como o Itaú age, pensa e atende.',
+       acoes:['Integração cultural com linguagem jovem e direta','Treinamento IOX — ponto de partida obrigatório','Estrutura da agência: cargos e ferramentas (Apoio Consignado)','Papéis e responsabilidades: proatividade, comunicação e organização'],
        tutora:'Acolher, apresentar e contextualizar. Tom leve e próximo.',
-       checks:['Conhece a cultura do banco','Entende a dinâmica da agência','Desenvolveu postura profissional','Concluiu capacitações obrigatórias']},
-      {tema:'31 a 60 dias — Construindo a Base',obj:'Aprender os produtos e ganhar segurança.',
-       acoes:['Aprender sobre os principais produtos da carteira','Conhecer fluxos e processos da operação','Participar de simulações práticas','Ganhar segurança para os primeiros atendimentos'],
+       checks:['Entende a cultura do banco','Concluiu o treinamento IOX','Conhece estrutura e cargos da agência','Conhece as ferramentas disponíveis','Entende papéis e responsabilidades','Demonstra proatividade e interesse']},
+      {tema:'31 a 60 dias — Capacitação de Consignados',obj:'Dominar os produtos de consignado da regional.',
+       acoes:['Capacitação: INSS, EP, OP','Convênios da regional','Fluxos de contratação e formalização','Simulações práticas com apoio do gestor'],
        tutora:'Garantir absorção do conteúdo. Tirar dúvidas.',
-       checks:['Conhece os principais produtos','Conhece fluxos e processos','Participou de simulações práticas','Tem segurança para atender']},
-      {tema:'61 a 90 dias — Primeiros Resultados',obj:'Colocar em prática e celebrar conquistas.',
-       acoes:['Colocar o aprendizado em prática','Acompanhar indicadores e evolução','Compartilhar aprendizados e desafios','Celebrar as primeiras conquistas'],
+       checks:['Conhece INSS, EP e OP','Conhece os convênios da regional','Entende o fluxo de contratação','Realizou simulações práticas']},
+      {tema:'61 a 90 dias — Prática & Primeiros Números',obj:'Ir para a prática e acompanhar resultados.',
+       acoes:['Atuação prática com apoio do gestor','Acompanhamento dos números de vendas','Registro e análise dos primeiros resultados','Reunião de alinhamento de desempenho'],
        tutora:'Acompanhar de perto. Feedback frequente.',
-       checks:['Está atuando na prática','Acompanha indicadores','Compartilha aprendizados','Celebrou primeiras conquistas']}
+       checks:['Está atuando na prática','Acompanha seus próprios números','Registrou primeiros resultados','Recebeu alinhamento de desempenho']}
     ]},
-  intermediario:{cor:'#B45309',titulo:'Fase 2 | Evoluir',
-    descricao:'Dos 91 aos 180 dias: mais autonomia, mais protagonismo.',
-    frase:'"Mais autonomia. Mais protagonismo."',
+  intermediario:{cor:'#B45309',titulo:'Trilha Intermediária — Crescendo na prática',
+    descricao:'Dos 91 aos 180 dias, hora de ir mais fundo: técnicas, novos produtos e ajustes de rota.',
+    frase:'"Vamos fazer juntos até você se sentir seguro(a)."',
     topicos:[
-      {tema:'91 a 120 dias — Crescimento em Movimento',obj:'Participar ativamente e expandir competências.',
-       acoes:['Participar ativamente da rotina comercial','Aprimorar técnicas de escuta e relacionamento','Expandir conhecimentos sobre soluções financeiras','Desenvolver novas competências'],
+      {tema:'91 a 120 dias — Protagonismo com Apoio',obj:'Participar com responsabilidade e aprofundar técnicas.',
+       acoes:['Participação ativa com apoio e responsabilidade','Capacitação técnica MOVER IOX: escuta ativa e apoio na oferta','Introdução: cartão de crédito e seguros','Mapeamento de competências: comunicação, organização, relacionamento, aprendizado contínuo'],
        tutora:'Observar evolução técnica. Mapear pontos fortes e de desenvolvimento.',
-       checks:['Participa ativamente da rotina','Aprimorou escuta e relacionamento','Expandiu conhecimento financeiro','Desenvolveu novas competências']},
-      {tema:'121 a 150 dias — Feedback e Evolução',obj:'Receber feedback e ajustar a rota.',
-       acoes:['Receber feedback estruturado','Identificar pontos fortes e oportunidades','Construir um plano de evolução','Ajustar a rota para continuar crescendo'],
+       checks:['Participa com apoio e responsabilidade','Concluiu capacitação MOVER IOX','Conhece cartão e seguros','Competências mapeadas']},
+      {tema:'121 a 150 dias — Avaliação & Ajuste de Rota',obj:'Avaliar e ajustar o necessário.',
+       acoes:['Feedback formal das competências','Análise dos números de resultado','Ajuste de rota','Conversas individuais com quem precisa de atenção'],
        tutora:'Conversa honesta. Foco em quem precisa de mais apoio.',
-       checks:['Recebeu feedback estruturado','Identificou pontos fortes','Construiu plano de evolução','Ajustou a rota']},
-      {tema:'151 a 180 dias — Consolidando sua Jornada',obj:'Avaliar evolução e fortalecer protagonismo.',
-       acoes:['Avaliar sua evolução técnica e comportamental','Reconhecer conquistas alcançadas','Preparar os próximos passos da carreira','Fortalecer seu protagonismo'],
+       checks:['Recebeu feedback das competências','Revisou resultados numéricos','Participou do ajuste de rota','Conversa individual realizada (se necessário)']},
+      {tema:'151 a 180 dias — Avaliação Comportamental',obj:'Avaliação formal com notas.',
+       acoes:['Avaliação comportamental com pontuação','Consolidação dos 6 meses','Conversa sobre próximo ciclo','Reconhecimento das conquistas'],
        tutora:'Conduzir com clareza e cuidado.',
-       checks:['Avaliação técnica e comportamental feita','Conquistas reconhecidas','Próximos passos preparados','Protagonismo fortalecido']}
+       checks:['Avaliação comportamental realizada','Consolidou aprendizados','Conversa de próximo ciclo feita','Conquistas reconhecidas']}
     ]},
-  avancado:{cor:'#166534',titulo:'Fase 3 | Impactar',
-    descricao:'Acima de 181 dias. Seu futuro começa a ganhar forma.',
-    frase:'"Seu futuro começa a ganhar forma."',
+  avancado:{cor:'#166534',titulo:'Trilha Avançada — Liderando o próprio desenvolvimento',
+    descricao:'Acima de 181 dias. Ampliar, multiplicar e pensar no futuro.',
+    frase:'"Agora é hora de pensar no seu futuro."',
     topicos:[
-      {tema:'181 a 210 dias — Construindo o Próximo Nível',obj:'Criar o PDI e ampliar horizontes.',
-       acoes:['Criar seu Plano de Desenvolvimento Individual','Ampliar conhecimentos sobre novos produtos','Definir objetivos de crescimento','Planejar os próximos passos da sua jornada'],
+      {tema:'181 a 210 dias — PDI & Novos Horizontes',obj:'Construir o PDI e expandir produtos.',
+       acoes:['Elaboração do PDI — Plano de Desenvolvimento Individual','Novos produtos: consórcio, CombinaQuí, Sorte, investimentos e abertura de conta','Metas de desenvolvimento','Alinhamento com gestor e tutora'],
        tutora:'Apoiar o PDI. Conectar com metas da agência.',
-       checks:['PDI criado e alinhado','Conhece novos produtos','Objetivos de crescimento definidos','Próximos passos planejados']},
-      {tema:'+210 dias — Estagiário Referência',obj:'Multiplicar, inspirar e construir carreira.',
-       acoes:['Apoiar ativamente a formação de novos estagiários','Atuar como multiplicador e mentor','Analisar sua curva de resultados e evolução','Refletir sobre carreira: onde quero chegar?'],
+       checks:['PDI elaborado e alinhado','Conhece consórcio, CombinaQuí, Sorte e investimentos','Metas de desenvolvimento definidas','Plano validado']},
+      {tema:'+210 dias — Estagiário Referência',obj:'Multiplicador, apoio e reflexão de carreira.',
+       acoes:['Apoio ativo no projeto de formação','Estagiário multiplicador: apoia 1 ou mais iniciantes','Análise da curva de resultados','Momento de carreira: onde quero chegar?'],
        tutora:'Facilitar protagonismo. Espaço para reflexão de carreira.',
-       checks:['Atua como multiplicador','Apoia novos estagiários','Analisou sua evolução','Realizou reflexão de carreira']}
+       checks:['Atua como multiplicador','Apoia o projeto','Analisou sua curva de resultados','Realizou conversa de carreira']}
     ]}
 };
 
@@ -1339,49 +1285,46 @@ function anoAtual(){return new Date().getFullYear();}
 function trimestreRef(){return anoAtual()+'-'+trimestreAtual();}
 function fmtTrimestre(t){if(!t)return'—';var p=t.split('-');return p[1].replace('Q','')+'º Tri '+p[0];}
 function ultimosTrimestres(){var r=[],d=new Date(),a=d.getFullYear(),q=Math.floor(d.getMonth()/3)+1;for(var i=0;i<6;i++){r.push(a+'-Q'+q);q--;if(q<1){q=4;a--;}}return r;}
-function getProducaoTri(eid,tri){if(!S.producao)return{meta:0,producao:0};return S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===tri;})||{meta:0,producao:0};}
 
-function getMesesTrimestre(tri){
-  var parts=tri.split('-'), y=parts[0], t=parseInt(parts[1].replace('Q','').replace('T',''));
-  var meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  var start=(t-1)*3;
-  return [{nome:meses[start],idx:1},{nome:meses[start+1],idx:2},{nome:meses[start+2],idx:3}];
+// ── MODALIDADES ──
+var MODALIDADES = ['INSS', 'OP', 'EP', 'Creditário'];
+var CORES_MODALIDADES = {'INSS': '#2196F3', 'OP': '#FF9800', 'EP': '#E91E63', 'Creditário': '#009688'};
+function getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx){
+  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
+  if(!S.producao) return 0;
+  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+  return row ? (parseFloat(row.producao) || 0) : 0;
 }
-
-function getProducaoMensal(eid,tri,mesIdx){
-  // Soma as 4 semanas do mês
+async function saveProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx, valor){
+  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
+  var r = await sb.from('producao_trimestral').upsert({estagiario_id: eid,tri_ref: ref,meta: 0,producao: valor}, {onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+    if(i >= 0) S.producao[i] = r.data; else S.producao.push(r.data);
+  }
+}
+function getTotalSemanaModalidades(eid, tri, mesIdx, semIdx){
   var total = 0;
-  for(var s=1;s<=4;s++) total += getProducaoSemanal(eid,tri,mesIdx,s);
+  for(var m = 0; m < 4; m++) total += getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, m);
+  return total;
+}
+function getTotalMesModalidades(eid, tri, mesIdx){
+  var total = 0;
+  for(var s = 1; s <= 4; s++) total += getTotalSemanaModalidades(eid, tri, mesIdx, s);
+  return total;
+}
+function getTotalTrimestreModalidade(eid, tri, modIdx){
+  var total = 0;
+  for(var mi = 1; mi <= 3; mi++) for(var s = 1; s <= 4; s++) total += getProducaoSemanalModalidade(eid, tri, mi, s, modIdx);
+  return total;
+}
+function getTotalTrimestreModalidades(eid, tri){
+  var total = 0;
+  for(var m = 0; m < 4; m++) total += getTotalTrimestreModalidade(eid, tri, m);
   return total;
 }
 
-function getProducaoSemanal(eid,tri,mesIdx,semIdx){
-  var ref=tri+'-M'+mesIdx+'-S'+semIdx;
-  if(!S.producao) return 0;
-  var row=S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
-  return row ? (parseFloat(row.producao)||0) : 0;
-}
-
-function getTotalMensal(eid,tri){
-  return getProducaoMensal(eid,tri,1)+getProducaoMensal(eid,tri,2)+getProducaoMensal(eid,tri,3);
-}
-
-async function saveProducaoSemanal(eid,tri,mesIdx,semIdx,valor){
-  var ref=tri+'-M'+mesIdx+'-S'+semIdx;
-  var r=await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:ref,meta:0,producao:valor},{onConflict:'estagiario_id,tri_ref'}).select().single();
-  if(!r.error && r.data){
-    var i=S.producao.findIndex(function(p){return p.estagiario_id===eid&&p.tri_ref===ref;});
-    if(i>=0) S.producao[i]=r.data; else S.producao.push(r.data);
-  }
-}
-
-function mesFechado(eid,tri,mesIdx){
-  // Mês está fechado quando todas as 4 semanas têm valor > 0
-  for(var s=1;s<=4;s++){
-    if(getProducaoSemanal(eid,tri,mesIdx,s) === 0) return false;
-  }
-  return true;
-}
+function getProducaoTri(eid,tri){if(!S.producao)return{meta:0,producao:0};return S.producao.find(function(p){return p.estagiario_id===eid&&p.tri_ref===tri;})||{meta:0,producao:0};}
 function calcPctChecks(e){var tot=0,done=0;['iniciante','intermediario','avancado'].forEach(function(tk){if(TRILHAS[tk])TRILHAS[tk].topicos.forEach(function(tp,ti){var ck=tk+'_'+ti,chk=(e.trilhaChecks&&e.trilhaChecks[ck])||Array(tp.checks.length).fill(false);tot+=tp.checks.length;done+=chk.filter(Boolean).length;});});return tot>0?Math.round((done/tot)*100):0;}
 function faixaComp(p){if(p>=75)return{cor:'#16A34A',bg:'#DCFCE7',label:'Acima do esperado'};if(p>=40)return{cor:'#EC7000',bg:'#FFF3E8',label:'Esperado'};return{cor:'#DC2626',bg:'#FEE2E2',label:'Precisa melhorar'};}
 function faixaRes(p){if(p>=85)return{cor:'#16A34A',bg:'#DCFCE7',label:'Meta atingida'};if(p>=50)return{cor:'#EC7000',bg:'#FFF3E8',label:'Em desenvolvimento'};return{cor:'#DC2626',bg:'#FEE2E2',label:'Abaixo da meta'};}
@@ -1394,12 +1337,12 @@ async function hashSenha(senha) {
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], feedbacks:[], descricao:[], encontros:[], cfg:{} };
+var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], feedbacks:[], descricao:[], encontros:[] };
 var DB_LOADED = false;
 
 var TEXTOS_PROJETO_DEFAULT = {
-  banner_over: 'Nextuber · A próxima geração de Itubers',
-  banner_titulo: 'A próxima geração de Itubers',
+  banner_over: 'Forma+ · Plataforma de Formação',
+  banner_titulo: 'Desenvolvendo o futuro comercial do Itaú',
   banner_desc: 'Programa estruturado de 6 meses para formar estagiários comerciais com excelência técnica, comportamental e comprometimento com o cliente. Acompanhamento contínuo, trilhas adaptadas e desenvolvimento orientado por dados.',
   sec_objetivo: 'Formar estagiários comerciais alinhados à cultura Itaú, com base técnica sólida, postura profissional e capacidade de gerar resultado com consistência.',
   sec_estrutura: '6 meses de jornada divididos em 3 trilhas progressivas:\n• Iniciante (0-90 dias): Acolhimento, cultura e fundamentos.\n• Intermediária (91-180 dias): Protagonismo com apoio e ajustes de rota.\n• Avançada (+181 dias): PDI, autonomia e papel de referência.',
@@ -1462,10 +1405,6 @@ async function loadFromDB(){
     var r3 = await sb.from('configuracoes').select('*').eq('id','timeline').maybeSingle();
     if(r3.data && r3.data.valor) S.tl = r3.data.valor;
 
-    // Load cfg (recorrência de produção)
-    var rCfg = await sb.from('configuracoes').select('*').eq('id','cfg_geral').maybeSingle();
-    if(rCfg.data && rCfg.data.valor) S.cfg = rCfg.data.valor;
-
     // Load gestores
     var rG = await sb.from('gestores').select('*').order('nome');
     if(!rG.error) S.gestores = rG.data || [];
@@ -1505,12 +1444,12 @@ function showLoading(on){
 
 var activeConteudoPage = 'iniciante';
 var TRILHA_INFO = {
-  iniciante:     {label:'1 a 3 meses', name:'Fase 1 | Decolar',     cor:'#EC7000', bg:'#FFF3E8', desc:'Conexão, cultura e primeiros resultados.'},
-  intermediario: {label:'3 a 6 meses', name:'Fase 2 | Evoluir', cor:'#B45309', bg:'#FEF3C7', desc:'Autonomia, protagonismo e crescimento.'},
-  avancado:      {label:'Acima de 6 meses', name:'Fase 3 | Impactar', cor:'#166534', bg:'#DCFCE7', desc:'PDI, novos horizontes e carreira.'}
+  iniciante:     {label:'1 a 3 meses', name:'Trilha Iniciante',     cor:'#EC7000', bg:'#FFF3E8', desc:'Base e segurança — Integração, conhecimento do banco e observação guiada.'},
+  intermediario: {label:'3 a 6 meses', name:'Trilha Intermediária', cor:'#B45309', bg:'#FEF3C7', desc:'Desenvolvimento — Participação ativa em atendimentos e postura profissional.'},
+  avancado:      {label:'Acima de 6 meses', name:'Trilha Avançada', cor:'#166534', bg:'#DCFCE7', desc:'Protagonismo — Mini projetos, autonomia, carreira e avaliação final.'}
 };
 
-var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null, pSelectedMesIdx=1;
+var editor=false, panelIdx=-1, cadIdx=-1, pSelectedMesIdx=1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null;
 
 // ── PERSIST ────────────────────────────────────────────────────────────────
 // persist is now async — call with await or fire-and-forget
@@ -1609,8 +1548,7 @@ async function deleteFeedback(id){
 
 async function saveMetaTri(eid,tri,meta){
   var ex = getProducaoTri(eid,tri);
-  var dataToSave = JSON.parse(JSON.stringify({estagiario_id:eid,tri_ref:tri,meta:parseFloat(meta)||0,producao:parseFloat(ex.producao)||0}));
-  var r = await sb.from('producao_trimestral').upsert(dataToSave,{onConflict:'estagiario_id,tri_ref'}).select().single();
+  var r = await sb.from('producao_trimestral').upsert({estagiario_id:eid,tri_ref:tri,meta:meta,producao:ex.producao||0},{onConflict:'estagiario_id,tri_ref'}).select().single();
   if(!r.error && r.data){
     var i = S.producao.findIndex(function(p){return p.estagiario_id===eid && p.tri_ref===tri;});
     if(i>=0) S.producao[i] = r.data; else S.producao.push(r.data);
@@ -1760,9 +1698,7 @@ function calcScore(e, triRef){
   var notaC = (pctC/100) * 4;
   // Resultados — 60% (0-6 pts)
   var prod = getProducaoTri(e.id, triRef);
-  var meta = parseFloat(prod.meta)||0;
-  var totalMensal = getTotalMensal(e.id, triRef);
-  var producao = totalMensal > 0 ? totalMensal : (parseFloat(prod.producao)||0);
+  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
   var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
   var notaR = pctR * 6;
   return Math.min(Math.round((notaC+notaR)*10)/10, 10);
@@ -1794,41 +1730,6 @@ function getTrilhaKey(inicio){
 function getTrilhaCor(key){
   var cores = {iniciante:'#EC7000', intermediario:'#B45309', avancado:'#166534'};
   return cores[key]||'#EC7000';
-}
-
-function getEffectiveTrilhaKey(e){
-  if(e.perfil && e.perfil.trilha_manual) return e.perfil.trilha_manual;
-  return (e.perfil && e.perfil.inicio) ? getTrilhaKey(e.perfil.inicio) : null;
-}
-
-function isGGA(){
-  if(!modoGestor || !gestorLogado) return false;
-  return S.ests.some(function(e){ return e.perfil && e.perfil.gga_funcional === gestorLogado.funcional; });
-}
-
-function isAniversario(e){
-  if(!e.perfil || !e.perfil.mes_aniversario) return false;
-  var parts = e.perfil.mes_aniversario.split('-');
-  var dia = parseInt(parts[0]), mes = parseInt(parts[1]);
-  var hoje = new Date();
-  return mes === (hoje.getMonth()+1) && dia === hoje.getDate();
-}
-
-function statusAtualizacao(e){
-  if(!S.cfg || !S.cfg.prazo_producao) return 'ok';
-  var definidoEm = S.cfg.prazo_definido_em || '2000-01-01';
-  var hoje = new Date().toISOString().slice(0,10); // YYYY-MM-DD
-  var prazo = S.cfg.prazo_producao; // YYYY-MM-DD
-  // Se já atualizou produção DEPOIS que o prazo foi definido → ok
-  if(e.perfil && e.perfil.ultima_atualizacao_prod && e.perfil.ultima_atualizacao_prod >= definidoEm) return 'ok';
-  // Calcular dias até o prazo (comparação por string de data)
-  var prazoDt = new Date(prazo+'T00:00:00');
-  var hojeDt = new Date(hoje+'T00:00:00');
-  var diffDias = Math.round((prazoDt - hojeDt) / 86400000);
-  if(diffDias < 0) return 'atrasado'; // prazo já passou
-  if(diffDias === 0) return 'atrasado'; // é hoje, prazo vencendo
-  if(diffDias <= 2) return 'alerta'; // faltam 1-2 dias
-  return 'ok'; // ainda tem tempo
 }
 
 
@@ -1895,8 +1796,8 @@ function renderOverviewKpis(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios && !isGGA()){
-      lista = S.ests.filter(function(e){ return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional); });
+    if(!p.todos_estagiarios){
+      lista = S.ests.filter(function(e){ return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional; });
     }
   }
   // Calcular contagens
@@ -1909,16 +1810,18 @@ function renderOverviewKpis(){
   });
   var porTrilha = {iniciante:0, intermediario:0, avancado:0};
   lista.forEach(function(e){
-      var k = getEffectiveTrilhaKey(e);
+    if(e.perfil && e.perfil.inicio){
+      var k = getTrilhaKey(e.perfil.inicio);
       if(k) porTrilha[k]++;
+    }
   });
 
   var cards = [
     {label:'Estagiários ativos', valor:totalEst, cor:'var(--ink)', bg:'var(--bg)'},
     {label:'Produção do trimestre', valor:fmtMilhar(totalProducao), cor:'#16A34A', bg:'#DCFCE7'},
-    {label:'Decolar', valor:porTrilha.iniciante, cor:'#EC7000', bg:'#FFF3E8'},
-    {label:'Evoluir', valor:porTrilha.intermediario, cor:'#B45309', bg:'#FEF3C7'},
-    {label:'Impactar', valor:porTrilha.avancado, cor:'#166534', bg:'#DCFCE7'}
+    {label:'Trilha Iniciante', valor:porTrilha.iniciante, cor:'#EC7000', bg:'#FFF3E8'},
+    {label:'Trilha Intermediária', valor:porTrilha.intermediario, cor:'#B45309', bg:'#FEF3C7'},
+    {label:'Trilha Avançada', valor:porTrilha.avancado, cor:'#166534', bg:'#DCFCE7'}
   ];
 
   el.innerHTML = cards.map(function(c){
@@ -1935,14 +1838,16 @@ function renderOverviewTrilhaChart(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios && !isGGA()){
-      lista = S.ests.filter(function(e){ return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional); });
+    if(!p.todos_estagiarios){
+      lista = S.ests.filter(function(e){ return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional; });
     }
   }
   var counts = {iniciante:0, intermediario:0, avancado:0};
   lista.forEach(function(e){
-      var k = getEffectiveTrilhaKey(e);
+    if(e.perfil && e.perfil.inicio){
+      var k = getTrilhaKey(e.perfil.inicio);
       if(k) counts[k]++;
+    }
   });
   var total = counts.iniciante + counts.intermediario + counts.avancado;
   if(total === 0){
@@ -1950,9 +1855,9 @@ function renderOverviewTrilhaChart(){
     return;
   }
   var bars = [
-    {key:'iniciante', label:'Decolar (0-90d)', cor:'#EC7000', bg:'#FFF3E8', n:counts.iniciante},
-    {key:'intermediario', label:'Evoluir (91-180d)', cor:'#B45309', bg:'#FEF3C7', n:counts.intermediario},
-    {key:'avancado', label:'Impactar (+181d)', cor:'#166534', bg:'#DCFCE7', n:counts.avancado}
+    {key:'iniciante', label:'Iniciante (0-90d)', cor:'#EC7000', bg:'#FFF3E8', n:counts.iniciante},
+    {key:'intermediario', label:'Intermediária (91-180d)', cor:'#B45309', bg:'#FEF3C7', n:counts.intermediario},
+    {key:'avancado', label:'Avançada (+181d)', cor:'#166534', bg:'#DCFCE7', n:counts.avancado}
   ];
   el.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;">'
     +bars.map(function(b){
@@ -2051,9 +1956,7 @@ async function salvarSnapshot(eid, tri){
   if(!e) return;
   var pct = calcPctChecks(e);
   var prod = getProducaoTri(eid, tri);
-  var meta = parseFloat(prod.meta)||0;
-  var totalMes = getTotalMensal(eid, tri);
-  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
+  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
   var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
   var st = Math.round((pct/100)*4*10)/10;
   var sr = Math.round(pctR*6*10)/10;
@@ -2093,9 +1996,7 @@ function renderAvaliacao(idx){
   var e = S.ests[idx], tri = trimestreRef();
   var pctC = calcPctChecks(e), fc = faixaComp(pctC);
   var prod = getProducaoTri(e.id, tri);
-  var meta = parseFloat(prod.meta)||0;
-  var totalMes = getTotalMensal(e.id, tri);
-  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
+  var meta = parseFloat(prod.meta)||0, producao = parseFloat(prod.producao)||0;
   var pctR = meta>0 ? Math.round(Math.min(producao/meta, 1)*100) : 0;
   var fr = faixaRes(pctR);
   var nota = calcScore(e, tri), nc = scoreColor(nota);
@@ -2184,90 +2085,7 @@ async function loadEvolucaoChart(eid){
     +'</div>';
 }
 
-// ── MODALIDADES ──
-var MODALIDADES = ['INSS', 'OP', 'EP', 'Creditário'];
-var CORES_MODALIDADES = {
-  'INSS': '#2196F3',
-  'OP': '#FF9800',
-  'EP': '#E91E63',
-  'Creditário': '#009688'
-};
-
-// Pega o valor produzido de uma semana específica para uma modalidade
-function getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx){
-  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
-  if(!S.producao) return 0;
-  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
-  return row ? (parseFloat(row.producao) || 0) : 0;
-}
-
-// Salva o valor produzido de uma semana específica para uma modalidade
-async function saveProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx, valor){
-  var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
-  var r = await sb.from('producao_trimestral').upsert({
-    estagiario_id: eid,
-    tri_ref: ref,
-    meta: 0,
-    producao: valor
-  }, {onConflict:'estagiario_id,tri_ref'}).select().single();
-  if(!r.error && r.data){
-    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
-    if(i >= 0) S.producao[i] = r.data;
-    else S.producao.push(r.data);
-  }
-}
-
-// Soma de uma semana (todas as 4 modalidades)
-function getTotalSemanaModalidades(eid, tri, mesIdx, semIdx){
-  var total = 0;
-  for(var m = 0; m < 4; m++){
-    total += getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, m);
-  }
-  return total;
-}
-
-// Soma do mês (todas as semanas, todas as modalidades)
-function getTotalMesModalidades(eid, tri, mesIdx){
-  var total = 0;
-  for(var s = 1; s <= 4; s++){
-    total += getTotalSemanaModalidades(eid, tri, mesIdx, s);
-  }
-  return total;
-}
-
-// Soma total do trimestre por modalidade específica
-function getTotalTrimestreModalidade(eid, tri, modIdx){
-  var total = 0;
-  for(var mi = 1; mi <= 3; mi++){
-    for(var s = 1; s <= 4; s++){
-      total += getProducaoSemanalModalidade(eid, tri, mi, s, modIdx);
-    }
-  }
-  return total;
-}
-
-// Soma total do trimestre (todas as modalidades)
-function getTotalTrimestreModalidades(eid, tri){
-  var total = 0;
-  for(var m = 0; m < 4; m++){
-    total += getTotalTrimestreModalidade(eid, tri, m);
-  }
-  return total;
-}
-
-function renderResultados(idx){
-  var el = document.getElementById('pResultados');
-  var sel = document.getElementById('pTriSelect');
-  if(!el || !sel) return;
-  var e = S.ests[idx];
-  var tris = ultimosTrimestres();
-  var tri = trimestreRef();
-  sel.innerHTML = tris.map(function(t){return '<option value="'+t+'"'+(t===tri?' selected':'')+'>'+fmtTrimestre(t)+'</option>';}).join('');
-  sel.onchange = function(){ renderResultadosForTri(idx, this.value); };
-  renderResultadosForTri(idx, tri);
-}
-
-// ─── DETECTAR MÊS VIGENTE ───
+// ─── DETECÇÃO DE MÊS VIGENTE ───
 function getMesVigente(){
   var hoje = new Date();
   var mesAtual = hoje.getMonth();
@@ -2286,63 +2104,32 @@ function getMesVigenteEmTrimestre(tri){
 }
 
 
+function renderResultados(idx){
+  var el = document.getElementById('pResultados');
+  var sel = document.getElementById('pTriSelect');
+  if(!el || !sel) return;
+  var e = S.ests[idx];
+  var tris = ultimosTrimestres();
+  var tri = trimestreRef();
+  sel.innerHTML = tris.map(function(t){return '<option value="'+t+'"'+(t===tri?' selected':'')+'>'+fmtTrimestre(t)+'</option>';}).join('');
+  sel.onchange = function(){ renderResultadosForTri(idx, this.value); };
+  renderResultadosForTri(idx, tri);
+}
+
 function renderResultadosForTri(idx, tri){
   var el = document.getElementById('pResultados'); if(!el) return;
   var e = S.ests[idx];
   var prod = getProducaoTri(e.id, tri);
   var meta = parseFloat(prod.meta)||0;
   var meses = getMesesTrimestre(tri);
-  
-  // Detectar mês vigente
-  var mesVigente = getMesVigenteEmTrimestre(tri);
-  
-  // Inicializar índice selecionado no mês vigente
-  if(pSelectedMesIdx === undefined || pSelectedMesIdx < 1 || pSelectedMesIdx > 3){
-    pSelectedMesIdx = mesVigente;
-  }
-  
-  var mesIdx = pSelectedMesIdx;
-  var mesNome = meses[mesIdx - 1].nome;
-  var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
-  
-  // Total produzido = soma das modalidades OU dados antigos
   var totalModalidades = getTotalTrimestreModalidades(e.id, tri);
   var totalMensalAntigo = getTotalMensal(e.id, tri);
   var totalProd = totalModalidades > 0 ? totalModalidades : (totalMensalAntigo > 0 ? totalMensalAntigo : (parseFloat(prod.producao)||0));
-  
   var pct = meta>0 ? Math.round(Math.min(totalProd/meta, 1)*100) : 0;
   var fr = faixaRes(pct);
   var canEdit = (editor || (modoGestor && gestorLogado));
   
-  // RENDERIZAR ESTRUTURA
-  var h = '';
-  
-  // ─── ABAS DE NAVEGAÇÃO ───
-  h += '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">';
-  for(var mi = 1; mi <= 3; mi++){
-    var mNome = meses[mi-1].nome;
-    var isVigente = (mi === mesVigente);
-    var isSelected = (mi === mesIdx);
-    var tabBg = isSelected ? 'var(--or)' : 'transparent';
-    var tabColor = isSelected ? '#fff' : (isVigente ? 'var(--or)' : 'var(--ink2)');
-    var tabBorder = isSelected ? '' : (isVigente ? '2px solid var(--or)' : '');
-    var tabStyle = isSelected 
-      ? 'background:var(--or);color:#fff;border-bottom:3px solid var(--or);'
-      : (isVigente 
-        ? 'color:var(--or);font-weight:600;' 
-        : '');
-    
-    h += '<button class="pMesTab" data-mesidx="'+mi+'" style="'
-      +'flex:1;padding:12px 0;border:none;background:transparent;color:'+tabColor+';'
-      +'font-size:13px;font-weight:'+(isSelected?'700':'500')+';cursor:pointer;'
-      +'border-bottom:3px solid '+(isSelected?'var(--or)':'transparent')+';'
-      +'transition:all .2s;font-family:inherit;'
-      +'">'+mNome+(isVigente && mi !== mesIdx?' (Vigente)':'')+' <span style="font-size:10px;color:var(--ink3);">'+fmtMilhar(getTotalMesModalidades(e.id, tri, mi))+'</span></button>';
-  }
-  h += '</div>';
-  
-  // ─── KPI CARDS (TOTAL DO TRIMESTRE) ───
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
+  var h = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Meta trimestral</div><div style="font-size:14px;font-weight:500;">'+fmtMilhar(meta)+'</div></div>'
     +'<div style="background:var(--bg);border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:var(--ink3);margin-bottom:3px;">Total produzido</div><div style="font-size:14px;font-weight:500;color:'+(totalProd>0?fr.cor:'var(--ink3)')+';">'+fmtMilhar(totalProd)+'</div></div>'
     +'<div style="background:'+fr.bg+';border-radius:var(--r2);padding:10px;text-align:center;"><div style="font-size:9px;color:'+fr.cor+';margin-bottom:3px;">Atingido</div><div style="font-size:14px;font-weight:500;color:'+fr.cor+';">'+(meta>0?pct+'%':'—')+'</div></div>'
@@ -2350,50 +2137,43 @@ function renderResultadosForTri(idx, tri){
     +'<div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:14px;"><div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+fr.cor+';"></div></div>';
 
   if(canEdit){
-    // Input da meta (apenas mostra uma vez, não em cada mês)
-    if(mesIdx === 1){
-      h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
-    }
+    h += '<div class="field-grp" style="margin-bottom:14px;"><div class="field-lbl">Meta do trimestre</div><input class="field-in" type="text" id="pMetaInput" value="'+(meta?fmtMilhar(meta):'')+'" placeholder="0" inputmode="numeric" style="font-size:13px;"></div>';
     
-    // ─── CARD DO MÊS SELECIONADO ───
-    var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
-    var fechado = true;
-    for(var s = 1; s <= 4; s++){
-      if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
-    }
-    
-    var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
-    var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
-    var mesStatus = fechado 
-      ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
-      : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
-    
-    var mesVigenteLabel = (mesIdx === mesVigente) ? '<span style="background:var(--or);color:#fff;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600;margin-left:8px;">MÊS VIGENTE</span>' : '';
-    
-    h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-          +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
-          +mesVigenteLabel
-        +'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-          +mesStatus
-          +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
-        +'</div>'
-      +'</div>'
-      +'<div style="overflow-x:auto;">'
-      +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
-      +'<thead><tr style="background:var(--bg);">'
-      +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
-      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
-      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
-      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
-      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
-      +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
-      +'</tr></thead>'
-      +'<tbody>';
+    for(var mi = 0; mi < 3; mi++){
+      var mesIdx = mi + 1;
+      var mesNome = meses[mi].nome;
+      var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
+      var fechado = true;
+      for(var s = 1; s <= 4; s++){
+        if(getTotalSemanaModalidades(e.id, tri, mesIdx, s) === 0){ fechado = false; break; }
+      }
       
-      // Uma linha por modalidade
+      var mesCorFundo = fechado ? '#DCFCE7' : 'var(--bg)';
+      var mesCorBorda = fechado ? '#16A34A' : 'var(--border)';
+      var mesStatus = fechado 
+        ? '<span style="color:#16A34A;font-size:10px;font-weight:600;">✓ FECHADO</span>' 
+        : '<span style="color:var(--ink3);font-size:10px;">Em andamento</span>';
+      
+      h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;margin-bottom:10px;background:'+mesCorFundo+';">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+          +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+'</span>'
+          +'<div style="display:flex;align-items:center;gap:8px;">'
+            +mesStatus
+            +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalMes)+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div style="overflow-x:auto;">'
+        +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
+        +'<thead><tr style="background:var(--bg);">'
+        +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Modalidade</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
+        +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
+        +'</tr></thead>'
+        +'<tbody>';
+      
       MODALIDADES.forEach(function(mod, modIdx){
         var totalMod = 0;
         h += '<tr>'
@@ -2403,7 +2183,7 @@ function renderResultadosForTri(idx, tri){
           var semVal = getProducaoSemanalModalidade(e.id, tri, mesIdx, si, modIdx);
           totalMod += semVal;
           h += '<td style="padding:3px;border:1px solid var(--border);">'
-            +'<input class="pModInput" data-tri="'+tri+'" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
+            +'<input class="pModInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-mod="'+modIdx+'" '
             +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '
             +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);">'
             +'</td>';
@@ -2412,7 +2192,6 @@ function renderResultadosForTri(idx, tri){
           +'</tr>';
       });
       
-      // Linha de TOTAL
       h += '<tr style="background:var(--bg);font-weight:700;">'
         +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
       for(var si2 = 1; si2 <= 4; si2++){
@@ -2422,30 +2201,31 @@ function renderResultadosForTri(idx, tri){
       h += '<td class="pModTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalMes)+'</td>'
         +'</tr>'
         +'</tbody></table></div></div>';
+    }
     
     h += '<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">'
       +'<button class="btn-obs" id="btnSalvarResultado">Salvar</button>'
       +'<span class="obs-saved" id="resultadoSaved">✓ Salvo</span>'
       +'</div>';
     
-    // ─── INDICADORES POR MODALIDADE ───
     h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade (Trimestre)</div>'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade</div>'
       +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
       +'</div>';
     
-    // ─── GRÁFICO DE PIZZA ───
     h += '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">'
-      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas (Trimestre)</div>'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas</div>'
       +'<div id="pGraficoMod"></div>'
       +'</div>';
     
   } else {
-    // Visualização readonly
-    var totalMes = getTotalMesModalidades(e.id, tri, mesIdx);
-    h += '<div style="padding:16px;background:var(--bg);border-radius:var(--r2);text-align:center;color:var(--ink2);font-size:13px;">'
-      +'<strong>'+mesNome+':</strong> '+fmtMilhar(totalMes)
-      +'</div>';
+    for(var mi3 = 0; mi3 < 3; mi3++){
+      var mesIdx3 = mi3 + 1;
+      var totalMes3 = getTotalMesModalidades(e.id, tri, mesIdx3);
+      h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
+        +'<span style="font-size:13px;color:var(--ink);">'+meses[mi3].nome+'</span>'
+        +'<span style="font-size:13px;font-weight:500;color:var(--ink);">'+fmtMilhar(totalMes3)+'</span></div>';
+    }
   }
   
   h += '<div id="pHistoricoTri"></div>';
@@ -2453,24 +2233,12 @@ function renderResultadosForTri(idx, tri){
   
   loadSnapshotsHistory(e.id);
   
-  // ─── LISTENERS ───
-  
-  // Abas de navegação
-  document.querySelectorAll('.pMesTab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      pSelectedMesIdx = parseInt(this.dataset.mesidx);
-      renderResultadosForTri(idx, tri);
-    });
-  });
-  
-  // Auto-format meta
   var metaInp = document.getElementById('pMetaInput');
   if(metaInp) metaInp.addEventListener('input', function(){
     var v = this.value.replace(/[^0-9]/g,'');
     this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
   });
   
-  // Auto-format modalidades + atualização em tempo real
   document.querySelectorAll('.pModInput').forEach(function(inp){
     inp.addEventListener('input', function(){
       var v = this.value.replace(/[^0-9]/g,'');
@@ -2479,20 +2247,17 @@ function renderResultadosForTri(idx, tri){
     });
   });
   
-  // Renderizar indicadores e gráfico
   if(canEdit){
     renderIndicadoresModalidades(idx, tri);
     renderGraficoPizzaModalidades(idx, tri);
   }
   
-  // Botão Salvar
   var btn = document.getElementById('btnSalvarResultado');
   if(btn){
     btn.addEventListener('click', async function(){
       var newMeta = parseMilhar((document.getElementById('pMetaInput')||{}).value)||0;
       await saveMetaTri(e.id, tri, newMeta);
       
-      // Salvar todas as modalidades
       var modInputs = document.querySelectorAll('.pModInput');
       var totalGeral = 0;
       for(var i = 0; i < modInputs.length; i++){
@@ -2504,7 +2269,6 @@ function renderResultadosForTri(idx, tri){
         totalGeral += val;
       }
       
-      // Atualizar total trimestral
       await saveProducaoTri(e.id, tri, totalGeral);
       
       if(!e.perfil) e.perfil = {};
@@ -2522,12 +2286,10 @@ function renderResultadosForTri(idx, tri){
   }
 }
 
-// Atualiza totais (semanas, mês, modalidade) enquanto o gestor digita
+
 function atualizarTotaisModalidades(idx, tri){
   var e = S.ests[idx];
-  
-  // Coletar todos os valores dos inputs em memória
-  var valores = {}; // valores[mesIdx][semIdx][modIdx] = valor
+  var valores = {};
   for(var mi = 1; mi <= 3; mi++){
     valores[mi] = {};
     for(var si = 1; si <= 4; si++){
@@ -2539,7 +2301,6 @@ function atualizarTotaisModalidades(idx, tri){
     }
   }
   
-  // Atualizar totais por modalidade (por mês)
   for(var mi2 = 1; mi2 <= 3; mi2++){
     for(var modI2 = 0; modI2 < 4; modI2++){
       var totalMod = 0;
@@ -2551,7 +2312,6 @@ function atualizarTotaisModalidades(idx, tri){
     }
   }
   
-  // Atualizar totais por semana
   for(var mi3 = 1; mi3 <= 3; mi3++){
     for(var si3 = 1; si3 <= 4; si3++){
       var totalSem = 0;
@@ -2563,7 +2323,6 @@ function atualizarTotaisModalidades(idx, tri){
     }
   }
   
-  // Atualizar total do mês
   for(var mi4 = 1; mi4 <= 3; mi4++){
     var totalMes = 0;
     for(var si4 = 1; si4 <= 4; si4++){
@@ -2575,12 +2334,10 @@ function atualizarTotaisModalidades(idx, tri){
     if(elMes) elMes.textContent = fmtMilhar(totalMes);
   }
   
-  // Atualizar indicadores e gráfico em tempo real
   renderIndicadoresModalidadesFromInputs(idx, tri, valores);
   renderGraficoPizzaModalidadesFromInputs(idx, tri, valores);
 }
 
-// Renderiza os 4 cards de indicadores por modalidade
 function renderIndicadoresModalidades(idx, tri){
   var el = document.getElementById('pIndicadoresMod');
   if(!el) return;
@@ -2608,7 +2365,6 @@ function renderIndicadoresModalidades(idx, tri){
   el.innerHTML = html;
 }
 
-// Versão que recebe valores em memória (uso em tempo real ao digitar)
 function renderIndicadoresModalidadesFromInputs(idx, tri, valores){
   var el = document.getElementById('pIndicadoresMod');
   if(!el) return;
@@ -2641,7 +2397,6 @@ function renderIndicadoresModalidadesFromInputs(idx, tri, valores){
   el.innerHTML = html;
 }
 
-// Renderiza o gráfico de pizza com a distribuição
 function renderGraficoPizzaModalidades(idx, tri){
   var el = document.getElementById('pGraficoMod');
   if(!el) return;
@@ -2654,7 +2409,6 @@ function renderGraficoPizzaModalidades(idx, tri){
   renderPizza(el, totais);
 }
 
-// Versão que recebe valores em memória
 function renderGraficoPizzaModalidadesFromInputs(idx, tri, valores){
   var el = document.getElementById('pGraficoMod');
   if(!el) return;
@@ -2672,7 +2426,6 @@ function renderGraficoPizzaModalidadesFromInputs(idx, tri, valores){
   renderPizza(el, totais);
 }
 
-// Renderiza o SVG do gráfico de pizza
 function renderPizza(el, totais){
   var total = totais.reduce(function(sum, t){ return sum + t.valor; }, 0);
   
@@ -2681,9 +2434,8 @@ function renderPizza(el, totais){
     return;
   }
   
-  // Calcular offsets do pizza chart
   var offset = 0;
-  var circunferencia = 283; // 2 * π * 45 (aprox.)
+  var circunferencia = 283;
   
   var pieSegments = '';
   var legendItems = '';
@@ -2718,48 +2470,20 @@ function renderPizza(el, totais){
 }
 
 
-
 function renderPanelTrilha(idx){
   var e = S.ests[idx];
-  var autoKey = e.perfil && e.perfil.inicio ? getTrilhaKey(e.perfil.inicio) : null;
-  var key = getEffectiveTrilhaKey(e);
-  var isManual = !!(e.perfil && e.perfil.trilha_manual);
+  var key = e.perfil && e.perfil.inicio ? getTrilhaKey(e.perfil.inicio) : null;
   var el = document.getElementById('pTrilha');
   if(!el) return;
 
   if(!key){
-    var hFallback = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:4px 0;">Cadastre a data de início para identificar a trilha automaticamente.</div>';
-    if(editor || (modoGestor && gestorLogado)){
-      hFallback += '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">'
-        +'<span style="font-size:12px;color:var(--ink2);">Definir trilha manualmente:</span>'
-        +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
-          +'<option value="">— Automático —</option>'
-          +'<option value="iniciante">Decolar</option>'
-          +'<option value="intermediario">Evoluir</option>'
-          +'<option value="avancado">Impactar</option>'
-        +'</select></div>';
-    }
-    el.innerHTML = hFallback;
-    var selFallback = document.getElementById('pTrilhaManualSelect');
-    if(selFallback){
-      selFallback.value = '';
-      selFallback.addEventListener('change', function(){
-        var val = this.value || null;
-        if(!e.perfil) e.perfil = {};
-        e.perfil.trilha_manual = val;
-        saveEstagiario(e); persist(true);
-        renderPanelTrilha(idx);
-        renderAvaliacao(idx);
-        renderCards();
-        renderOverviewAll();
-      });
-    }
+    el.innerHTML = '<div style="font-size:13px;color:var(--ink3);font-style:italic;padding:4px 0;">Cadastre a data de início para identificar a trilha automaticamente.</div>';
     return;
   }
 
   var t = TRILHAS[key];
   var cor = getTrilhaCor(key);
-  var etapa = e.perfil && e.perfil.inicio ? etapaAtual(e.perfil.inicio) : 0;
+  var etapa = etapaAtual(e.perfil.inicio);
   // Convert global etapa index to local within current trilha
   var etapaLocal;
   if(key==='iniciante') etapaLocal = etapa;            // 0,1,2
@@ -2769,29 +2493,11 @@ function renderPanelTrilha(idx){
   var canCheck = (editor || (modoGestor && gestorLogado));
   if(!e.trilhaChecks) e.trilhaChecks = {};
 
-  // Trilha header with manual override select for tutora
-  var trilhaLabel = isManual ? 'Trilha definida manualmente' : 'Trilha identificada';
   var html = '<div style="background:var(--or-f);border:1px solid rgba(236,112,0,.2);border-left:3px solid '+cor+';border-radius:8px;padding:12px 14px;margin-bottom:14px;">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">'
-      +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:'+cor+';font-weight:600;">'+trilhaLabel+'</div>'
-      +(isManual && autoKey && autoKey !== key ? '<span style="font-size:10px;color:var(--ink3);font-style:italic;">Auto: '+TRILHAS[autoKey].titulo.split('—')[0].trim()+'</span>' : '')
-    +'</div>'
+    +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:'+cor+';font-weight:600;margin-bottom:3px;">Trilha identificada</div>'
     +'<div style="font-size:14px;font-weight:500;color:var(--ink);">'+t.titulo+'</div>'
     +'<div style="font-size:12px;color:var(--ink2);font-style:italic;margin-top:3px;">'+t.frase+'</div>'
     +'</div>';
-
-  // Select para tutora/gestor trocar a trilha
-  if(editor || (modoGestor && gestorLogado)){
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
-      +'<span style="font-size:12px;color:var(--ink2);">Alterar trilha:</span>'
-      +'<select id="pTrilhaManualSelect" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink);cursor:pointer;">'
-        +'<option value=""'+(isManual?'':' selected')+'>Automático (por data)</option>'
-        +'<option value="iniciante"'+(isManual && key==='iniciante'?' selected':'')+'>Decolar</option>'
-        +'<option value="intermediario"'+(isManual && key==='intermediario'?' selected':'')+'>Evoluir</option>'
-        +'<option value="avancado"'+(isManual && key==='avancado'?' selected':'')+'>Impactar</option>'
-      +'</select>'
-    +'</div>';
-  }
 
   t.topicos.forEach(function(tp, ti){
     var checkKey = key+'_'+ti;
@@ -2830,22 +2536,6 @@ function renderPanelTrilha(idx){
   });
 
   el.innerHTML = html;
-
-  // Event listener para troca manual de trilha (tutora only)
-  var trilhaSelect = document.getElementById('pTrilhaManualSelect');
-  if(trilhaSelect){
-    trilhaSelect.addEventListener('change', function(){
-      var val = this.value || null;
-      if(!e.perfil) e.perfil = {};
-      e.perfil.trilha_manual = val;
-      saveEstagiario(e); persist(true);
-      renderPanelTrilha(idx);
-      renderAvaliacao(idx);
-      renderCards();
-      renderOverviewAll();
-    });
-  }
-
   el.querySelectorAll('input[type=checkbox]').forEach(function(cb){
     cb.addEventListener('change', function(){
       var estIdx = parseInt(this.dataset.est);
@@ -2873,7 +2563,7 @@ function renderCards(){
     var p = gestorLogado.permissoes || {};
     if(!p.todos_estagiarios){
       lista = S.ests.filter(function(e){
-        return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
+        return e.perfil && e.perfil.gestor_funcional === gestorLogado.funcional;
       });
     }
     if(!lista.length){
@@ -2886,23 +2576,16 @@ function renderCards(){
     var done=e.meses.filter(function(s){return s.indexOf('Concluído')>=0||s.indexOf('Renovado')>=0;}).length;
     var hasFn=e.perfil&&e.perfil.funcional;
     var t=e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null;
-    var cert=e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
-    var bday=isAniversario(e);
-    var updStatus=hasFn?statusAtualizacao(e):'ok';
-    var cardBorder = updStatus==='atrasado'?'border-left:4px solid #DC2626;':(updStatus==='alerta'?'border-left:4px solid #F59E0B;':'');
     var score=calcScore(e);
     var dots=e.meses.map(function(s,i){
       var cls=i===ci?'curr':(dotCls(s)||'');
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
-    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-ei="'+ei+'" style="'+cardBorder+'">'
-      +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
+    return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-ei="'+ei+'">'
+      +'<div class="nc-top"><div class="nc-avatar">'+ini(e.nome)+'</div><div class="nc-name">'+e.nome+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
         +(t?'<span class="nc-chip">◷ '+t+'</span>':'')
-        +(cert?'<span class="nc-chip" style="background:#DBEAFE;color:#1E40AF;font-weight:600;">🏅 '+cert+'</span>':'')
-        +(updStatus==='atrasado'?'<span class="nc-chip" style="background:#FEE2E2;color:#DC2626;font-weight:600;">⚠ Prazo vencido</span>':'')
-        +(updStatus==='alerta'?'<span class="nc-chip" style="background:#FEF3C7;color:#92400E;font-weight:600;">⏳ Prazo próximo</span>':'')
         +(!hasFn&&!t?'<span class="nc-chip empty">Perfil não cadastrado</span>':'')
         +(e.atencao?'<span class="nc-atencao"><span class="nc-atencao-dot"></span>Atenção</span>':'')
       +'</div>'
@@ -2912,11 +2595,7 @@ function renderCards(){
   document.getElementById('notionGrid').innerHTML='<div class="notion-grid">'+cards+'</div>';
   // attach click events
   document.querySelectorAll('.notion-card').forEach(function(card){
-    card.addEventListener('click',function(){
-    var eid = this.dataset.eid;
-    var idx = S.ests.findIndex(function(e){ return e.id === eid; });
-    if(idx >= 0) openPanel(idx);
-  });
+    card.addEventListener('click',function(){ var eid = this.dataset.eid; var idx = S.ests.findIndex(function(e){ return e.id === eid; }); if(idx >= 0) openPanel(idx); });
   });
 }
 
@@ -2927,51 +2606,10 @@ function openPanel(idx){
   document.getElementById('pAv').textContent=ini(e.nome);
   document.getElementById('pNm').textContent=e.nome;
   document.getElementById('pFn').textContent=e.perfil&&e.perfil.funcional?'#'+e.perfil.funcional:'Sem funcional';
-  // idade removida
+  document.getElementById('pIdade').textContent=e.perfil&&e.perfil.idade?e.perfil.idade+' anos':'—';
   document.getElementById('pFunc').textContent=e.perfil&&e.perfil.funcional?e.perfil.funcional:'—';
-  // GA e GGA
-  var gaFunc = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:null;
-  var ggaFunc = e.perfil&&e.perfil.gga_funcional?e.perfil.gga_funcional:null;
-  var gaGestor = gaFunc ? S.gestores.find(function(g){return g.funcional===gaFunc;}) : null;
-  var ggaGestor = ggaFunc ? S.gestores.find(function(g){return g.funcional===ggaFunc;}) : null;
-  document.getElementById('pGA').textContent = gaGestor ? gaGestor.nome+' (#'+gaFunc+')' : (gaFunc||'—');
-  document.getElementById('pGGA').textContent = ggaGestor ? ggaGestor.nome+' (#'+ggaFunc+')' : (ggaFunc||'—');
   document.getElementById('pInicio').textContent=fmtDate(e.perfil&&e.perfil.inicio?e.perfil.inicio:'');
   document.getElementById('pTempo').textContent=(e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null)||'—';
-  var certVal = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
-  var certEl = document.getElementById('pCertificacao');
-  if(certEl){
-    if(certVal){
-      certEl.innerHTML = '<span style="background:#DBEAFE;color:#1E40AF;font-weight:600;padding:2px 10px;border-radius:12px;font-size:12px;">🏅 '+certVal+'</span>';
-    } else {
-      certEl.textContent = '—';
-    }
-  }
-  // Nascimento
-  var nascEl = document.getElementById('pNascimento');
-  if(nascEl){
-    var anivVal = e.perfil&&e.perfil.mes_aniversario?e.perfil.mes_aniversario:null;
-    if(anivVal){
-      var anivP = anivVal.split('-');
-      var mesesNome = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      var bday = isAniversario(e);
-      nascEl.innerHTML = anivP[0]+' de '+mesesNome[parseInt(anivP[1])] + (bday?' <span style="font-size:12px;">🎂 Aniversário hoje!</span>':'');
-    } else { nascEl.textContent = '—'; }
-  }
-  // Última atualização de produção
-  var updEl = document.getElementById('pUltimaAtualizacao');
-  if(updEl){
-    var updVal = e.perfil&&e.perfil.ultima_atualizacao_prod?e.perfil.ultima_atualizacao_prod:null;
-    var st = statusAtualizacao(e);
-    if(updVal){
-      var corSt = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'#16A34A');
-      var lblSt = st==='atrasado'?' (prazo vencido)':(st==='alerta'?' (prazo próximo)':' (em dia)');
-      updEl.innerHTML = fmtDate(updVal)+' <span style="color:'+corSt+';font-size:11px;font-weight:600;">'+lblSt+'</span>';
-    } else if(S.cfg && S.cfg.prazo_producao){
-      var corSt2 = st==='atrasado'?'#DC2626':(st==='alerta'?'#F59E0B':'var(--ink3)');
-      updEl.innerHTML = '<span style="color:'+corSt2+';font-size:12px;">Ainda não atualizada</span>';
-    } else { updEl.textContent = '—'; }
-  }
   renderPanelTrilha(idx);
   updateAtencaoBtn(idx);
   renderAvaliacao(idx);
@@ -3079,8 +2717,7 @@ function renderGestoresList(){
         +'<div class="cad-list-meta"><span>#'+g.funcional+'</span>'+'<span style="background:'+(g.tipo_gestor==='gga'?'#FEE2E2':'#E0F2FE')+';color:'+(g.tipo_gestor==='gga'?'#DC2626':'#0369A1')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;">'+(g.tipo_gestor==='gga'?'👔 GGA':'👤 GA')+'</span>'+(pCount>0?'<span style="color:var(--or);font-weight:500;">'+pCount+' acesso'+(pCount>1?'s':'')+' extra</span>':'')+'</div>'
       +'</div>'
       +'<div style="display:flex;gap:6px;">'
-        +'<button class="cad-list-btn" data-permgestor="'+g.id+'" style="color:var(--or);border-color:rgba(236,112,0,.3);">⚙ Permissões</button>'
-        +'<button class="cad-list-btn cad-del-btn" data-delgestor="'+g.id+'" style="color:#DC2626;border-color:#FECACA;">Remover</button>'
+        +'<button class="cad-list-btn" data-permgestor="'+g.id+'" style="color:var(--or);border-color:rgba(236,112,0,.3);">⚙ Permissões</button>'+(editor?'<button class="cad-list-btn" data-tipogestor="'+g.id+'" style="color:#7C3AED;border-color:#E9D5FF;">✎ Tipo</button>':'')+'<button class="cad-list-btn cad-del-btn" data-delgestor="'+g.id+'" style="color:#DC2626;border-color:#FECACA;">Remover</button>'
       +'</div>'
     +'</div>';
   }).join('');
@@ -3101,21 +2738,18 @@ function renderGestoresList(){
   });
 }
 
-// BUG 3: Funções para editar tipo do gestor
 function abrirTipoGestorModal(gestorId){
   if(!editor) return;
   var g = S.gestores.find(function(x){ return x.id === gestorId; });
   if(!g) return;
   var tipoAtual = g.tipo_gestor || 'ga';
   var novoTipo = tipoAtual === 'gga' ? 'ga' : 'gga';
-  var label = novoTipo === 'gga' ? '👔 Gerente Geral da Agência (GGA)' : '👤 Gerente de Atendimento (GA)';
-  if(confirm('Alterar tipo de "'+g.nome+'" para '+label+'?')){
-    alterarTipoGestor(gestorId, novoTipo);
-  }
+  var label = novoTipo === 'gga' ? '👔 GGA' : '👤 GA';
+  if(confirm('Alterar para '+label+'?')) alterarTipoGestor(gestorId, novoTipo);
 }
 async function alterarTipoGestor(gestorId, novoTipo){
-  var update = JSON.parse(JSON.stringify({tipo_gestor:novoTipo}));
-  var r = await sb.from('gestores').update(update).eq('id', gestorId).select().single();
+  var u = JSON.parse(JSON.stringify({tipo_gestor:novoTipo}));
+  var r = await sb.from('gestores').update(u).eq('id', gestorId).select().single();
   if(!r.error && r.data){
     var i = S.gestores.findIndex(function(g){ return g.id === gestorId; });
     if(i >= 0) S.gestores[i] = r.data;
@@ -3173,26 +2807,15 @@ function renderCadList(){
   });
 }
 function loadEditCad(idx){
-  if(!editor && !isGGA()) return;
+  if(!editor) return;
   var e = S.ests[idx];
   cadIdx = idx;
   document.getElementById('cadNome').value = e.nome;
-  // idade removida
+  document.getElementById('cadIdade').value = e.perfil&&e.perfil.idade?e.perfil.idade:'';
   document.getElementById('cadFunc').value = e.perfil&&e.perfil.funcional?e.perfil.funcional:'';
   document.getElementById('cadInicio').value = e.perfil&&e.perfil.inicio?e.perfil.inicio:'';
-  var gaEl = document.getElementById('cadGAFunc');
-  if(gaEl) gaEl.value = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:'';
-  var ggaEl = document.getElementById('cadGGAFunc');
-  if(ggaEl) ggaEl.value = e.perfil&&e.perfil.gga_funcional?e.perfil.gga_funcional:'';
-  var certEl = document.getElementById('cadCertificacao');
-  if(certEl) certEl.value = e.perfil&&e.perfil.certificacao?e.perfil.certificacao:'';
-  if(e.perfil&&e.perfil.mes_aniversario){
-    var anivParts = e.perfil.mes_aniversario.split('-');
-    var diaEl = document.getElementById('cadAnivDia');
-    var mesEl = document.getElementById('cadAnivMes');
-    if(diaEl) diaEl.value = anivParts[0]||'';
-    if(mesEl) mesEl.value = anivParts[1]||'';
-  }
+  var gfEl = document.getElementById('cadGestorFunc');
+  if(gfEl) gfEl.value = e.perfil&&e.perfil.gestor_funcional?e.perfil.gestor_funcional:'';
   updateCadPreview();
   document.getElementById('cadAddBtn').textContent = '✓ Salvar alterações';
   document.getElementById('cadNome').scrollIntoView({behavior:'smooth', block:'center'});
@@ -3216,22 +2839,16 @@ function updateCadPreview(){
   }
 }
 async function savePerfil(){
-  if(!editor && !isGGA()){ return; }
+  if(!editor){ return; }
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
-  var gaVal = (document.getElementById('cadGAFunc')||{}).value||'';
-  var ggaVal = (document.getElementById('cadGGAFunc')||{}).value||'';
-  var anivDia = (document.getElementById('cadAnivDia')||{}).value||'';
-  var anivMes = (document.getElementById('cadAnivMes')||{}).value||'';
-  var mesAniversario = (anivDia && anivMes) ? anivDia+'-'+anivMes : null;
+  var gfVal = (document.getElementById('cadGestorFunc')||{}).value || '';
   var perfil = {
+    idade: document.getElementById('cadIdade').value,
     funcional: func,
     inicio: document.getElementById('cadInicio').value,
-    ga_funcional: gaVal.replace(/[^0-9]/g,'').slice(0,9),
-    gga_funcional: ggaVal.replace(/[^0-9]/g,'').slice(0,9),
-    certificacao: document.getElementById('cadCertificacao').value || null,
-    mes_aniversario: mesAniversario
+    gestor_funcional: gfVal.replace(/[^0-9]/g,'').slice(0,9)
   };
   
   // Validate
@@ -3239,13 +2856,7 @@ async function savePerfil(){
   
   var estagiario;
   if(cadIdx >= 0){
-    // editing existing — preserve trilha_manual and ultima_atualizacao_prod
-    if(S.ests[cadIdx].perfil && S.ests[cadIdx].perfil.trilha_manual){
-      perfil.trilha_manual = S.ests[cadIdx].perfil.trilha_manual;
-    }
-    if(S.ests[cadIdx].perfil && S.ests[cadIdx].perfil.ultima_atualizacao_prod){
-      perfil.ultima_atualizacao_prod = S.ests[cadIdx].perfil.ultima_atualizacao_prod;
-    }
+    // editing existing
     S.ests[cadIdx].nome = nome;
     S.ests[cadIdx].perfil = perfil;
     estagiario = S.ests[cadIdx];
@@ -3280,7 +2891,7 @@ async function savePerfil(){
   
   // reset form
   cadIdx = -1;
-  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
   document.getElementById('cadAv').textContent = '?';
   document.getElementById('cadAv').classList.remove('filled');
@@ -3326,12 +2937,8 @@ function renderTrilha(){
 function goPage(id){
   // Bloqueio de acesso por permissão
   // Cadastro e descricao são SÓ TUTORA — gestor nunca acessa
-  var paginasSoTutora = ['configuracoes'];
-  var paginasTutoraOuGGA = ['cadastro'];
+  var paginasSoTutora = ['cadastro'];
   if(paginasSoTutora.indexOf(id) >= 0 && !editor){
-    id = 'overview';
-  }
-  if(paginasTutoraOuGGA.indexOf(id) >= 0 && !editor && !(modoGestor && isGGA())){
     id = 'overview';
   }
   // Trilhas/conteúdos: tutora sempre, gestor se tiver permissão, visitante não
@@ -3368,7 +2975,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -3380,8 +2987,8 @@ function doLogin(){
   } else { document.getElementById('loginErr').classList.add('show'); document.getElementById('loginPwd').value=''; document.getElementById('loginPwd').focus(); }
 }
 function setCadInputState(){
-  var dis=!editor && !isGGA();
-  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){
+  var dis=!editor;
+  ['cadNome','cadIdade','cadFunc','cadInicio','cadGestorFunc'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=dis;
   });
   var btn=document.getElementById('cadAddBtn'); if(btn) btn.disabled=dis;
@@ -3404,11 +3011,6 @@ function applyModoGestor(){
   // Aplicar permissões customizadas: liberar áreas extras
   var p = (gestorLogado && gestorLogado.permissoes) || {};
   if(p.trilhas){
-    document.querySelectorAll('[data-page="trilhas"]').forEach(function(el){ el.style.display=''; });
-  }
-  // GGA: acesso a cadastro e todos os estagiários
-  if(isGGA()){
-    document.querySelectorAll('[data-page="cadastro"]').forEach(function(el){ el.style.display=''; });
     document.querySelectorAll('[data-page="trilhas"]').forEach(function(el){ el.style.display=''; });
   }
   // Esconder botão "Editar banner"
@@ -3504,98 +3106,6 @@ function applyMode(){
   
   renderRanking();
   renderOverviewAll();
-}
-
-// ── EXPORTAÇÃO EXCEL ───────────────────────────────────────────────────────
-function openExportModal(){
-  var ov = document.getElementById('exportOv');
-  if(!ov) return;
-  var container = document.getElementById('exportTriCheckboxes');
-  var tris = ultimosTrimestres();
-  container.innerHTML = tris.map(function(tri, i){
-    return '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);">'
-      +'<input type="checkbox" value="'+tri+'"'+(i===0?' checked':'')+' style="width:16px;height:16px;accent-color:var(--or);">'
-      +'<span style="font-size:14px;color:var(--ink);">'+fmtTrimestre(tri)+'</span>'
-      +'</label>';
-  }).join('');
-  ov.classList.add('open');
-}
-
-function closeExportModal(){
-  var ov = document.getElementById('exportOv');
-  if(ov) ov.classList.remove('open');
-}
-
-function exportToExcel(){
-  if(typeof XLSX === 'undefined'){ alert('Erro: biblioteca de exportação não carregou. Recarregue a página e tente novamente.'); return; }
-  var container = document.getElementById('exportTriCheckboxes');
-  var checkedTris = [];
-  container.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb){
-    checkedTris.push(cb.value);
-  });
-  if(!checkedTris.length){ alert('Selecione ao menos um trimestre.'); return; }
-
-  // Determinar lista de estagiários (gestor vê só os seus, tutora vê todos)
-  var lista = S.ests;
-  if(modoGestor && gestorLogado){
-    var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios){
-      lista = S.ests.filter(function(e){
-        return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
-      });
-    }
-  }
-
-  if(!lista.length){ alert('Nenhum estagiário para exportar.'); return; }
-
-  // Montar cabeçalho
-  var header = ['Nome', 'Funcional', 'Tempo no programa', 'Trilha'];
-  checkedTris.forEach(function(tri){
-    var label = fmtTrimestre(tri);
-    header.push('Meta ('+label+')', 'Produção ('+label+')', '% Atingido ('+label+')');
-  });
-
-  // Montar dados
-  var rows = lista.map(function(e){
-    var trilhaKey = getEffectiveTrilhaKey(e);
-    var trilhaNome = trilhaKey ? {iniciante:'Decolar',intermediario:'Evoluir',avancado:'Impactar'}[trilhaKey] : '—';
-    var tempo = (e.perfil && e.perfil.inicio) ? calcTempo(e.perfil.inicio) : '—';
-    var row = [
-      e.nome || '—',
-      (e.perfil && e.perfil.funcional) || '—',
-      tempo,
-      trilhaNome
-    ];
-    checkedTris.forEach(function(tri){
-      var prod = getProducaoTri(e.id, tri);
-      var meta = parseFloat(prod.meta)||0;
-      var totalMes = getTotalMensal(e.id, tri);
-      var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
-      var pct = meta > 0 ? Math.round((producao/meta)*100) : 0;
-      row.push(meta, producao, pct + '%');
-    });
-    return row;
-  });
-
-  // Criar workbook
-  var wb = XLSX.utils.book_new();
-  var wsData = [header].concat(rows);
-  var ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Larguras das colunas
-  var colWidths = [{wch:25},{wch:12},{wch:18},{wch:16}];
-  checkedTris.forEach(function(){
-    colWidths.push({wch:16},{wch:16},{wch:14});
-  });
-  ws['!cols'] = colWidths;
-
-  var sheetName = editor ? 'Todos os Estagiários' : 'Meus Estagiários';
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-  // Gerar e baixar
-  var nomeArquivo = 'FormaPlus_Resultados_' + new Date().toISOString().slice(0,10) + '.xlsx';
-  XLSX.writeFile(wb, nomeArquivo);
-  closeExportModal();
 }
 
 // ── EVENT LISTENERS ────────────────────────────────────────────────────────
@@ -3868,37 +3378,6 @@ document.getElementById('btnObs').addEventListener('click', function(){
     document.getElementById('projetoOv').classList.remove('open');
   });
 
-  // Configurações — prazo de produção por data
-  var cfgPrazoInput = document.getElementById('cfgPrazoData');
-  if(cfgPrazoInput && S.cfg && S.cfg.prazo_producao) cfgPrazoInput.value = S.cfg.prazo_producao;
-  // Mostrar prazo atual
-  function renderPrazoAtual(){
-    var el = document.getElementById('cfgPrazoAtual');
-    if(!el) return;
-    if(S.cfg && S.cfg.prazo_producao){
-      var d = new Date(S.cfg.prazo_producao+'T12:00:00');
-      var hoje = new Date();
-      var diff = Math.ceil((d - hoje) / 86400000);
-      var status = diff > 2 ? '🟢 Dentro do prazo' : (diff > 0 ? '🟡 Prazo próximo ('+diff+' dias)' : '🔴 Prazo vencido');
-      el.innerHTML = '📅 Prazo atual: <strong>'+fmtDate(S.cfg.prazo_producao)+'</strong> — '+status;
-    } else {
-      el.innerHTML = 'Nenhum prazo definido ainda.';
-    }
-  }
-  renderPrazoAtual();
-  var btnCfgPrazo = document.getElementById('btnCfgSalvarPrazo');
-  if(btnCfgPrazo) btnCfgPrazo.addEventListener('click', async function(){
-    var val = document.getElementById('cfgPrazoData').value;
-    if(!val){ alert('Selecione uma data.'); return; }
-    S.cfg.prazo_producao = val;
-    S.cfg.prazo_definido_em = new Date().toISOString().slice(0,10);
-    await sb.from('configuracoes').upsert({id:'cfg_geral', valor:JSON.parse(JSON.stringify(S.cfg))});
-    var sv = document.getElementById('cfgPrazoSaved');
-    if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
-    renderPrazoAtual();
-    renderCards();
-  });
-
   // Encontros
   var btnAddE = document.getElementById('btnAddEncontro');
   if(btnAddE) btnAddE.addEventListener('click', function(){
@@ -3972,12 +3451,6 @@ document.getElementById('btnObs').addEventListener('click', function(){
   });
   document.getElementById('btnCancelRename').addEventListener('click', function(){ document.getElementById('renameOv').classList.remove('open'); });
   document.getElementById('renameIn').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('btnConfirmRename').click(); if(e.key==='Escape') document.getElementById('renameOv').classList.remove('open'); });
-
-  // Export Excel
-  document.getElementById('btnExportExcel').addEventListener('click', openExportModal);
-  document.getElementById('btnCancelExport').addEventListener('click', closeExportModal);
-  document.getElementById('btnConfirmExport').addEventListener('click', exportToExcel);
-  document.getElementById('exportOv').addEventListener('click', function(ev){ if(ev.target === this) closeExportModal(); });
 
   // Init — load from Supabase
   loadFromDB();
@@ -4095,13 +3568,4 @@ document.addEventListener('click', function(ev){
 
 </script>
 </body>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(function(r) {
-    console.log('Nextuber PWA registrado');
-  }).catch(function(e) {
-    console.log('SW erro:', e);
-  });
-}
-</script>
 </html>
