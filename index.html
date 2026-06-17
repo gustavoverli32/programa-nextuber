@@ -1267,6 +1267,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v3 - getMesVigenteEmTrimestre INCLUÍDA');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -4134,11 +4135,32 @@ document.addEventListener('click', function(ev){
 </script>
 </body>
 <script>
+// Forçar limpeza de cache antigo (v3)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(function(r) {
-    console.log('Nextuber PWA registrado');
-  }).catch(function(e) {
-    console.log('SW erro:', e);
+  // Primeiro limpar caches antigos
+  if ('caches' in window) {
+    caches.keys().then(function(names) {
+      names.forEach(function(name) {
+        caches.delete(name);
+        console.log('Cache limpo:', name);
+      });
+    });
+  }
+  // Desregistrar SW antigos e registrar novo
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    registrations.forEach(function(reg) {
+      reg.unregister();
+      console.log('SW antigo desregistrado');
+    });
+    // Registrar novo após limpeza
+    setTimeout(function(){
+      navigator.serviceWorker.register('./sw.js').then(function(r) {
+        r.update();
+        console.log('Nextuber PWA registrado (v3)');
+      }).catch(function(e) {
+        console.log('SW erro:', e);
+      });
+    }, 500);
   });
 }
 </script>
