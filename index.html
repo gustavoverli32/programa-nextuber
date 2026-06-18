@@ -2524,8 +2524,14 @@ function renderResultadosForTri(idx, tri){
   
   // Gráfico de pizza (todos os produtos)
   h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
-    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas (trimestre)</div>'
+    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Equilíbrio (trimestre)</div>'
     +'<div id="pGraficoMod"></div>'
+    +'</div>';
+  
+  // Gráfico de pizza - Outros Produtos
+  h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
+    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Outros Produtos (trimestre)</div>'
+    +'<div id="pGraficoOutros"></div>'
     +'</div>';
   
   h += '<div id="pHistoricoTri"></div>';
@@ -2584,6 +2590,7 @@ function renderResultadosForTri(idx, tri){
   
   if(canEdit){
     renderGraficoPizzaModalidades(idx, tri);
+    renderGraficoPizzaOutros(idx, tri);
   }
   
   var btn = document.getElementById('btnSalvarResultado');
@@ -2757,9 +2764,16 @@ function renderGraficoPizzaModalidades(idx, tri){
     return {nome: mod, valor: getTotalTrimestreModalidade(e.id, tri, modIdx), cor: CORES_MODALIDADES[mod]};
   });
   
-  // Adicionar outros produtos
-  OUTROS_PRODUTOS.forEach(function(prod, prodIdx){
-    totais.push({nome: prod, valor: getTotalTrimestreOutroProduto(e.id, tri, prodIdx), cor: CORES_OUTROS[prod]});
+  renderPizza(el, totais);
+}
+
+function renderGraficoPizzaOutros(idx, tri){
+  var el = document.getElementById('pGraficoOutros');
+  if(!el) return;
+  var e = S.ests[idx];
+  
+  var totais = OUTROS_PRODUTOS.map(function(prod, prodIdx){
+    return {nome: prod, valor: getTotalTrimestreOutroProduto(e.id, tri, prodIdx), cor: CORES_OUTROS[prod]};
   });
   
   renderPizza(el, totais);
