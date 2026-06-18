@@ -1267,7 +1267,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v4 - pSelectedMesIdx CORRIGIDO');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v6 - todos meses editáveis');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2336,7 +2336,7 @@ function renderResultadosForTri(idx, tri){
   }
   
   var isVigente = (mesIdx === mesVigenteNoTri);
-  var canEdit = (editor || (modoGestor && gestorLogado)) && isVigente; // Só edita mês vigente
+  var canEdit = (editor || (modoGestor && gestorLogado)); // Todos os meses editáveis
   
   // Total produzido (compatibilidade)
   var totalModalidades = getTotalTrimestreModalidades(e.id, tri);
@@ -2360,8 +2360,7 @@ function renderResultadosForTri(idx, tri){
       +'<div style="font-size:16px;font-weight:700;color:var(--ink);">'+mesNome+'</div>'
       +'<div style="font-size:11px;color:var(--ink3);margin-top:2px;">'
         +(isVigente ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:12px;font-weight:600;">● Mês vigente</span>' 
-                   : (mesIdx > mesVigenteNoTri ? '<span style="color:var(--ink3);">Mês futuro</span>' 
-                                                 : '<span style="color:#F59E0B;font-weight:600;">⚠ Mês fechado (para leitura)</span>'))
+                   : '')
       +'</div>'
     +'</div>'
     +'<button id="btnMesProximo" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--or);">Próximo →</button>'
@@ -2373,10 +2372,10 @@ function renderResultadosForTri(idx, tri){
   }
   
   // Card do mês
-  var mesCorFundo = isVigente ? 'var(--bg)' : '#F3F4F6';
-  var mesCorBorda = isVigente ? 'var(--border)' : '#D1D5DB';
-  var mesStatus = isVigente ? '<span style="color:var(--or);font-size:10px;font-weight:600;">✎ Editável</span>' 
-                             : '<span style="color:#6B7280;font-size:10px;">Leitura apenas</span>';
+  var mesCorFundo = 'var(--bg)';
+  var mesCorBorda = 'var(--border)';
+  var mesStatus = isVigente ? '<span style="color:var(--or);font-size:10px;font-weight:600;">● Mês vigente</span>' 
+                             : '<span style="color:var(--or);font-size:10px;font-weight:600;">✎ Editável</span>';
   
   h += '<div style="border:1px solid '+mesCorBorda+';border-radius:10px;padding:12px;background:'+mesCorFundo+';margin-bottom:10px;">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
