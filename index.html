@@ -1267,7 +1267,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v7 - outros produtos');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v8 - pizza unificada');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2498,7 +2498,6 @@ function renderResultadosForTri(idx, tri){
   h += '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--bg);margin-bottom:14px;margin-top:8px;">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
       +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+' - Outros Produtos</span>'
-      +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalOutrosMes)+'</span>'
     +'</div>'
     +'<div style="overflow-x:auto;">'
     +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
@@ -2521,19 +2520,9 @@ function renderResultadosForTri(idx, tri){
       +'</tr>';
   });
   
-  h += '<tr style="background:var(--bg);font-weight:700;">'
-    +'<td style="padding:8px 10px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>'
-    +'<td class="pOutroTotalMes" style="padding:8px 10px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:13px;font-weight:700;">'+fmtMilhar(totalOutrosMes)+'</td>'
-    +'</tr>'
-    +'</tbody></table></div></div>';
+  h += '</tbody></table></div></div>';
   
-  // Indicadores por modalidade
-  h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
-    +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade (trimestre)</div>'
-    +'<div id="pIndicadoresMod" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;"></div>'
-    +'</div>';
-  
-  // Gráfico de pizza
+  // Gráfico de pizza (todos os produtos)
   h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
     +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Distribuição de vendas (trimestre)</div>'
     +'<div id="pGraficoMod"></div>'
@@ -2590,18 +2579,10 @@ function renderResultadosForTri(idx, tri){
     inp.addEventListener('input', function(){
       var v = this.value.replace(/[^0-9]/g,'');
       this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
-      // Atualizar total dos outros produtos
-      var totalOutros = 0;
-      document.querySelectorAll('.pOutroInput').forEach(function(el){
-        totalOutros += parseMilhar(el.value) || 0;
-      });
-      var totEl = document.querySelector('.pOutroTotalMes');
-      if(totEl) totEl.textContent = fmtMilhar(totalOutros);
     });
   });
   
   if(canEdit){
-    renderIndicadoresModalidades(idx, tri);
     renderGraficoPizzaModalidades(idx, tri);
   }
   
@@ -2702,8 +2683,7 @@ function atualizarTotaisModalidades(idx, tri){
   }
   
   // Atualizar indicadores e gráfico em tempo real
-  renderIndicadoresModalidadesFromInputs(idx, tri, valores);
-  renderGraficoPizzaModalidadesFromInputs(idx, tri, valores);
+  // Pizza será atualizada ao salvar
 }
 
 // Renderiza os 4 cards de indicadores por modalidade
@@ -2775,6 +2755,11 @@ function renderGraficoPizzaModalidades(idx, tri){
   
   var totais = MODALIDADES.map(function(mod, modIdx){
     return {nome: mod, valor: getTotalTrimestreModalidade(e.id, tri, modIdx), cor: CORES_MODALIDADES[mod]};
+  });
+  
+  // Adicionar outros produtos
+  OUTROS_PRODUTOS.forEach(function(prod, prodIdx){
+    totais.push({nome: prod, valor: getTotalTrimestreOutroProduto(e.id, tri, prodIdx), cor: CORES_OUTROS[prod]});
   });
   
   renderPizza(el, totais);
