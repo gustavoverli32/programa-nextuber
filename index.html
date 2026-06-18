@@ -1267,7 +1267,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v3 - getMesVigenteEmTrimestre INCLUÍDA');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v4 - pSelectedMesIdx CORRIGIDO');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -1554,7 +1554,7 @@ var TRILHA_INFO = {
   avancado:      {label:'Acima de 6 meses', name:'Fase 3 | Impactar', cor:'#166534', bg:'#DCFCE7', desc:'PDI, novos horizontes e carreira.'}
 };
 
-var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null;
+var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null, pSelectedMesIdx=0;
 
 // ── PERSIST ────────────────────────────────────────────────────────────────
 // persist is now async — call with await or fire-and-forget
