@@ -1267,7 +1267,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v6 - todos meses editáveis');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v7 - outros produtos');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2236,6 +2236,62 @@ var CORES_MODALIDADES = {
   'Creditário': '#009688'
 };
 
+// ── OUTROS PRODUTOS ──
+var OUTROS_PRODUTOS = ['Seguros', 'PIC', 'Combinaqui', 'Autobank', 'Consórcios'];
+var CORES_OUTROS = {
+  'Seguros': '#8B5CF6',
+  'PIC': '#06B6D4',
+  'Combinaqui': '#F97316',
+  'Autobank': '#EF4444',
+  'Consórcios': '#10B981'
+};
+
+function getProducaoOutroProduto(eid, tri, mesIdx, prodIdx){
+  var ref = tri + '-M' + mesIdx + '-OUT' + prodIdx;
+  if(!S.producao) return 0;
+  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+  return row ? (parseFloat(row.producao) || 0) : 0;
+}
+
+async function saveProducaoOutroProduto(eid, tri, mesIdx, prodIdx, valor){
+  var ref = tri + '-M' + mesIdx + '-OUT' + prodIdx;
+  var r = await sb.from('producao_trimestral').upsert(JSON.parse(JSON.stringify({
+    estagiario_id: eid,
+    tri_ref: ref,
+    meta: 0,
+    producao: valor
+  })), {onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+    if(i >= 0) S.producao[i] = r.data;
+    else S.producao.push(r.data);
+  }
+}
+
+function getTotalMesOutros(eid, tri, mesIdx){
+  var total = 0;
+  for(var p = 0; p < OUTROS_PRODUTOS.length; p++){
+    total += getProducaoOutroProduto(eid, tri, mesIdx, p);
+  }
+  return total;
+}
+
+function getTotalTrimestreOutros(eid, tri){
+  var total = 0;
+  for(var mi = 1; mi <= 3; mi++){
+    total += getTotalMesOutros(eid, tri, mi);
+  }
+  return total;
+}
+
+function getTotalTrimestreOutroProduto(eid, tri, prodIdx){
+  var total = 0;
+  for(var mi = 1; mi <= 3; mi++){
+    total += getProducaoOutroProduto(eid, tri, mi, prodIdx);
+  }
+  return total;
+}
+
 // Pega o valor produzido de uma semana específica para uma modalidade
 function getProducaoSemanalModalidade(eid, tri, mesIdx, semIdx, modIdx){
   var ref = tri + '-M' + mesIdx + '-S' + semIdx + '-MOD' + modIdx;
@@ -2436,6 +2492,41 @@ function renderResultadosForTri(idx, tri){
       +'</div>';
   }
   
+  // ── OUTROS PRODUTOS (mensal) ──
+  var totalOutrosMes = getTotalMesOutros(e.id, tri, mesIdx);
+  
+  h += '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--bg);margin-bottom:14px;margin-top:8px;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+      +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+' - Outros Produtos</span>'
+      +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalOutrosMes)+'</span>'
+    +'</div>'
+    +'<div style="overflow-x:auto;">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
+    +'<thead><tr style="background:var(--bg);">'
+    +'<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Produto</th>'
+    +'<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);width:50%;">Valor mensal</th>'
+    +'</tr></thead>'
+    +'<tbody>';
+  
+  OUTROS_PRODUTOS.forEach(function(prod, prodIdx){
+    var val = getProducaoOutroProduto(e.id, tri, mesIdx, prodIdx);
+    var inputDis = !canEdit ? 'disabled' : '';
+    h += '<tr>'
+      +'<td style="padding:8px 10px;border:1px solid var(--border);font-weight:600;color:'+CORES_OUTROS[prod]+';font-size:12px;">'+prod+'</td>'
+      +'<td style="padding:4px 6px;border:1px solid var(--border);">'
+        +'<input class="pOutroInput" data-mes="'+mesIdx+'" data-prod="'+prodIdx+'" '
+        +'type="text" value="'+(val?fmtMilhar(val):'')+'" placeholder="0" inputmode="numeric" '+inputDis+' '
+        +'style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:12px;text-align:center;background:var(--surface);'+(inputDis?'opacity:.6;cursor:not-allowed;':'')+';">'
+      +'</td>'
+      +'</tr>';
+  });
+  
+  h += '<tr style="background:var(--bg);font-weight:700;">'
+    +'<td style="padding:8px 10px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>'
+    +'<td class="pOutroTotalMes" style="padding:8px 10px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:13px;font-weight:700;">'+fmtMilhar(totalOutrosMes)+'</td>'
+    +'</tr>'
+    +'</tbody></table></div></div>';
+  
   // Indicadores por modalidade
   h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
     +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Indicadores por modalidade (trimestre)</div>'
@@ -2494,6 +2585,21 @@ function renderResultadosForTri(idx, tri){
     });
   });
   
+  // Listeners para Outros Produtos (atualiza total em tempo real)
+  document.querySelectorAll('.pOutroInput').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var v = this.value.replace(/[^0-9]/g,'');
+      this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
+      // Atualizar total dos outros produtos
+      var totalOutros = 0;
+      document.querySelectorAll('.pOutroInput').forEach(function(el){
+        totalOutros += parseMilhar(el.value) || 0;
+      });
+      var totEl = document.querySelector('.pOutroTotalMes');
+      if(totEl) totEl.textContent = fmtMilhar(totalOutros);
+    });
+  });
+  
   if(canEdit){
     renderIndicadoresModalidades(idx, tri);
     renderGraficoPizzaModalidades(idx, tri);
@@ -2514,6 +2620,15 @@ function renderResultadosForTri(idx, tri){
         var modI = parseInt(modInputs[i].getAttribute('data-mod'));
         await saveProducaoSemanalModalidade(e.id, tri, mesI, semI, modI, val);
         totalGeral += val;
+      }
+      
+      // Salvar Outros Produtos
+      var outroInputs = document.querySelectorAll('.pOutroInput');
+      for(var j = 0; j < outroInputs.length; j++){
+        var outVal = parseMilhar(outroInputs[j].value) || 0;
+        var outMes = parseInt(outroInputs[j].getAttribute('data-mes'));
+        var outProd = parseInt(outroInputs[j].getAttribute('data-prod'));
+        await saveProducaoOutroProduto(e.id, tri, outMes, outProd, outVal);
       }
       
       await saveProducaoTri(e.id, tri, totalGeral);
