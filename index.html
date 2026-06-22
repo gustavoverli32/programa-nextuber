@@ -541,6 +541,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   <div class="nav-section">
     <div class="nav-lbl">Programa</div>
     <div class="nav-item" data-page="trilhas" data-tutora="only">◑ Trilhas</div>
+    <div class="nav-item" data-page="agendamentos">◉ Agendamentos</div>
   </div>
   <div class="nav-section" data-tutora="only">
     <div class="nav-lbl">Sistema</div>
@@ -590,6 +591,10 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div class="drawer-item" data-page="trilhas" data-tutora="only">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13"/><circle cx="19" cy="18" r="2.5"/></svg>
         Trilhas
+      </div>
+      <div class="drawer-item" data-page="agendamentos">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><circle cx="8" cy="14" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="16" cy="14" r="1"/></svg>
+        Agendamentos
       </div>
       <div class="drawer-section-lbl" data-tutora="only">Sistema</div>
       <div class="drawer-item" data-page="configuracoes" data-tutora="only">
@@ -832,6 +837,37 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       <div style="background:var(--surface);border:1px dashed var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--ink3);font-size:13px;">
         Mais configurações em breve.
       </div>
+    </div>
+  </section>
+
+  <section id="page-agendamentos" class="page">
+    <div class="ph">
+      <h1>Agendamentos</h1>
+      <p>Registre aulas, treinamentos e eventos com os estagiários.</p>
+    </div>
+    
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <select id="filtroAgendFase" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 12px;background:var(--surface);color:var(--ink);cursor:pointer;">
+          <option value="todos">Todas as fases</option>
+          <option value="fase1">Fase 1 - Decolar</option>
+          <option value="fase2">Fase 2 - Evoluir</option>
+          <option value="fase3">Fase 3 - Impactar</option>
+        </select>
+        <select id="filtroAgendTipo" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 12px;background:var(--surface);color:var(--ink);cursor:pointer;">
+          <option value="todos">Todos os tipos</option>
+          <option value="aula">Aula</option>
+          <option value="workshop">Workshop</option>
+          <option value="treinamento">Treinamento</option>
+          <option value="reuniao">Reunião</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <button class="btn-obs" id="btnNovoAgendamento" style="font-size:13px;">+ Novo Agendamento</button>
+    </div>
+    
+    <div id="agendamentosList" style="display:grid;gap:12px;">
+      <div style="text-align:center;padding:40px;color:var(--ink3);">Carregando...</div>
     </div>
   </section>
 
@@ -1167,6 +1203,92 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   </div>
 </div>
 
+<!-- MODAL AGENDAMENTO -->
+<div class="modal-ov" id="modalAgendamento">
+  <div class="modal-box" style="max-width:560px;width:95%;max-height:90vh;overflow-y:auto;">
+    <h3 id="modalAgendTitulo" style="margin-bottom:14px;">Novo Agendamento</h3>
+    
+    <div style="display:grid;gap:12px;">
+      <div>
+        <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Título *</label>
+        <input class="field-in" type="text" id="agendTitulo" maxlength="120" placeholder="Ex: Aula sobre consignados de prefeituras" style="margin-bottom:0;">
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Data *</label>
+          <input class="field-in" type="date" id="agendData" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Tipo</label>
+          <select class="field-in" id="agendTipo" style="margin-bottom:0;">
+            <option value="aula">Aula</option>
+            <option value="workshop">Workshop</option>
+            <option value="treinamento">Treinamento</option>
+            <option value="reuniao">Reunião</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+      </div>
+      
+      <div>
+        <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Público-alvo</label>
+        <select class="field-in" id="agendFaseAlvo" style="margin-bottom:0;">
+          <option value="todos">Todos os estagiários</option>
+          <option value="fase1">Apenas Fase 1 - Decolar (0-90 dias)</option>
+          <option value="fase2">Apenas Fase 2 - Evoluir (91-180 dias)</option>
+          <option value="fase3">Apenas Fase 3 - Impactar (181+ dias)</option>
+        </select>
+      </div>
+      
+      <div>
+        <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Descrição</label>
+        <textarea class="field-in" id="agendDescricao" rows="3" placeholder="Detalhes sobre o conteúdo abordado..." style="margin-bottom:0;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      
+      <div>
+        <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px;">Arquivo (opcional)</label>
+        <input type="file" id="agendArquivo" style="font-size:13px;width:100%;padding:8px;border:1px dashed var(--border2);border-radius:8px;background:var(--bg);cursor:pointer;">
+        <div id="agendArquivoAtual" style="margin-top:6px;font-size:11px;color:var(--ink3);"></div>
+      </div>
+      
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <label style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:8px;">Presença dos estagiários</label>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;font-size:13px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="agendPresenca" value="todos" checked id="agendPresencaTodos">
+            <span>Todos presentes</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="agendPresenca" value="parcial" id="agendPresencaParcial">
+            <span>Marcar quem faltou</span>
+          </label>
+        </div>
+        <div id="agendListaEstagiarios" style="display:none;max-height:200px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;">
+          <!-- Preenchido dinamicamente -->
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-btns" style="margin-top:18px;">
+      <button class="btn-sm" id="btnCancelAgend">Cancelar</button>
+      <button class="btn-sm pr" id="btnSalvarAgend">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALHES AGENDAMENTO -->
+<div class="modal-ov" id="modalAgendDetalhes">
+  <div class="modal-box" style="max-width:560px;width:95%;max-height:90vh;overflow-y:auto;">
+    <div id="agendDetalhesBody"></div>
+    <div class="modal-btns" style="margin-top:18px;">
+      <button class="btn-sm" id="btnFecharAgendDetalhes">Fechar</button>
+      <button class="btn-sm" id="btnEditarAgend" style="background:#3B82F6;color:white;border-color:#3B82F6;">Editar</button>
+      <button class="btn-sm" id="btnExcluirAgend" style="background:#DC2626;color:white;border-color:#DC2626;">Excluir</button>
+    </div>
+  </div>
+</div>
+
 <div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <div style="width:40px;height:40px;border:3px solid var(--or-l);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite;"></div>
   <div style="font-size:14px;color:var(--ink2);font-weight:500;">Carregando dados...</div>
@@ -1267,7 +1389,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v8 - pizza unificada');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v9 - agendamentos');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -4241,6 +4363,467 @@ document.addEventListener('click', function(ev){
   if(!ev.target.closest('.rtb-emoji-wrap')){
     document.querySelectorAll('.rtb-emoji-picker').forEach(function(p){ p.classList.remove('open'); });
   }
+});
+
+// ════════════════════════════════════════════
+// ═══════════ AGENDAMENTOS ═══════════════════
+// ════════════════════════════════════════════
+
+var agendamentosCache = [];
+var agendEditandoId = null;
+var agendVisualizandoId = null;
+
+async function carregarAgendamentos(){
+  try {
+    var r = await sb.from('agendamentos').select('*').order('data', {ascending: false});
+    if(r.error){
+      console.error('Erro carregando agendamentos:', r.error);
+      agendamentosCache = [];
+    } else {
+      agendamentosCache = r.data || [];
+    }
+  } catch(e){
+    console.error('Erro:', e);
+    agendamentosCache = [];
+  }
+}
+
+function getFaseEstagiario(e){
+  var meses = mesesPrograma(e);
+  if(meses < 3) return 'fase1';
+  if(meses < 6) return 'fase2';
+  return 'fase3';
+}
+
+function nomeFase(fase){
+  if(fase === 'fase1') return 'Fase 1 - Decolar';
+  if(fase === 'fase2') return 'Fase 2 - Evoluir';
+  if(fase === 'fase3') return 'Fase 3 - Impactar';
+  return 'Todos';
+}
+
+function nomeTipo(tipo){
+  var map = {
+    'aula': 'Aula',
+    'workshop': 'Workshop',
+    'treinamento': 'Treinamento',
+    'reuniao': 'Reunião',
+    'outro': 'Outro'
+  };
+  return map[tipo] || tipo;
+}
+
+function corTipo(tipo){
+  var map = {
+    'aula': '#3B82F6',
+    'workshop': '#8B5CF6',
+    'treinamento': '#F59E0B',
+    'reuniao': '#10B981',
+    'outro': '#6B7280'
+  };
+  return map[tipo] || '#6B7280';
+}
+
+function formatarDataBR(dataStr){
+  if(!dataStr) return '—';
+  var partes = dataStr.split('-');
+  if(partes.length !== 3) return dataStr;
+  return partes[2] + '/' + partes[1] + '/' + partes[0];
+}
+
+function renderAgendamentos(){
+  var el = document.getElementById('agendamentosList');
+  if(!el) return;
+  
+  var filtroFase = (document.getElementById('filtroAgendFase')||{}).value || 'todos';
+  var filtroTipo = (document.getElementById('filtroAgendTipo')||{}).value || 'todos';
+  
+  var lista = agendamentosCache.filter(function(a){
+    if(filtroFase !== 'todos' && a.fase_alvo !== filtroFase && a.fase_alvo !== 'todos') return false;
+    if(filtroTipo !== 'todos' && a.tipo !== filtroTipo) return false;
+    return true;
+  });
+  
+  if(lista.length === 0){
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink3);background:var(--surface);border:1px dashed var(--border);border-radius:12px;">Nenhum agendamento encontrado.<br><span style="font-size:12px;">Clique em "+ Novo Agendamento" para registrar o primeiro.</span></div>';
+    return;
+  }
+  
+  var h = '';
+  lista.forEach(function(a){
+    var presentes = (a.presenca && Array.isArray(a.presenca)) 
+      ? a.presenca.filter(function(p){return p.presente;}).length 
+      : 0;
+    var totalEsperado = (a.presenca && Array.isArray(a.presenca)) ? a.presenca.length : 0;
+    var temArquivo = !!a.arquivo_nome;
+    
+    h += '<div class="agend-card" data-id="'+a.id+'" style="background:var(--surface);border:1px solid var(--border);border-left:4px solid '+corTipo(a.tipo)+';border-radius:10px;padding:14px;cursor:pointer;transition:transform .15s;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap;">'
+        +'<div style="flex:1;min-width:200px;">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'
+            +'<span style="background:'+corTipo(a.tipo)+'20;color:'+corTipo(a.tipo)+';font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;text-transform:uppercase;letter-spacing:.04em;">'+nomeTipo(a.tipo)+'</span>'
+            +'<span style="font-size:11px;color:var(--ink3);">'+nomeFase(a.fase_alvo)+'</span>'
+            +(temArquivo ? '<span style="font-size:11px;color:var(--or);">📎 Arquivo</span>' : '')
+          +'</div>'
+          +'<div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px;">'+(a.titulo||'(sem título)')+'</div>'
+          +(a.descricao ? '<div style="font-size:12px;color:var(--ink2);margin-bottom:6px;line-height:1.4;">'+(a.descricao.length>120 ? a.descricao.substring(0,120)+'...' : a.descricao)+'</div>' : '')
+        +'</div>'
+        +'<div style="text-align:right;min-width:120px;">'
+          +'<div style="font-size:13px;font-weight:600;color:var(--or);">'+formatarDataBR(a.data)+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);flex-wrap:wrap;gap:8px;">'
+        +'<span>👤 Criado por: <strong style="color:var(--ink2);">'+(a.gestor_nome||'—')+'</strong></span>'
+        +'<span>✓ Presentes: <strong style="color:var(--ink2);">'+presentes+'/'+totalEsperado+'</strong></span>'
+      +'</div>'
+    +'</div>';
+  });
+  
+  el.innerHTML = h;
+  
+  // Listeners de clique nos cards
+  el.querySelectorAll('.agend-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      var id = this.getAttribute('data-id');
+      abrirDetalhesAgendamento(id);
+    });
+  });
+}
+
+function podeGerenciarAgendamento(a){
+  // Tutora pode tudo. Gestor só edita/exclui se for o autor
+  if(editor) return true;
+  if(modoGestor && gestorLogado && a.gestor_id === gestorLogado.id) return true;
+  return false;
+}
+
+function abrirDetalhesAgendamento(id){
+  var a = agendamentosCache.find(function(x){ return x.id === id; });
+  if(!a) return;
+  
+  agendVisualizandoId = id;
+  var modal = document.getElementById('modalAgendDetalhes');
+  var body = document.getElementById('agendDetalhesBody');
+  
+  var podeGerenciar = podeGerenciarAgendamento(a);
+  
+  var presencaHtml = '';
+  if(a.presenca && Array.isArray(a.presenca) && a.presenca.length > 0){
+    var ausentes = a.presenca.filter(function(p){ return !p.presente; });
+    if(ausentes.length === 0){
+      presencaHtml = '<div style="background:#DCFCE7;border:1px solid #16A34A;border-radius:8px;padding:10px;font-size:12px;color:#15803D;font-weight:600;">✓ Todos os estagiários estavam presentes ('+a.presenca.length+')</div>';
+    } else {
+      presencaHtml = '<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px;">'
+        +'<div style="font-size:12px;color:#92400E;font-weight:600;margin-bottom:6px;">⚠ '+ausentes.length+' ausente(s) de '+a.presenca.length+':</div>';
+      ausentes.forEach(function(p){
+        var est = S.ests.find(function(e){ return e.id === p.estagiario_id; });
+        presencaHtml += '<div style="font-size:12px;color:#78350F;padding:2px 0;">• '+(est?est.nome:'(estagiário removido)')+(p.observacao ? ' <span style="opacity:.7;">— '+p.observacao+'</span>' : '')+'</div>';
+      });
+      presencaHtml += '</div>';
+    }
+  }
+  
+  var arquivoHtml = '';
+  if(a.arquivo_url){
+    arquivoHtml = '<div style="margin-bottom:14px;"><div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Arquivo</div>'
+      +'<a href="'+a.arquivo_url+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--or);text-decoration:none;font-size:13px;">📎 '+(a.arquivo_nome||'Arquivo')+'</a></div>';
+  } else if(a.arquivo_nome){
+    arquivoHtml = '<div style="margin-bottom:14px;"><div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Arquivo</div>'
+      +'<div style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--ink2);font-size:13px;">📎 '+a.arquivo_nome+'</div></div>';
+  }
+  
+  body.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">'
+    +'<span style="background:'+corTipo(a.tipo)+'20;color:'+corTipo(a.tipo)+';font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.04em;">'+nomeTipo(a.tipo)+'</span>'
+    +'<span style="font-size:12px;color:var(--ink3);">'+nomeFase(a.fase_alvo)+'</span>'
+    +'</div>'
+    +'<h3 style="font-size:18px;margin-bottom:6px;color:var(--ink);">'+(a.titulo||'(sem título)')+'</h3>'
+    +'<div style="font-size:13px;color:var(--or);font-weight:600;margin-bottom:14px;">📅 '+formatarDataBR(a.data)+'</div>'
+    +(a.descricao ? '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;">'+a.descricao+'</div>' : '')
+    +arquivoHtml
+    +'<div style="margin-bottom:14px;">'
+      +'<div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Presença</div>'
+      +presencaHtml
+    +'</div>'
+    +'<div style="padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);">'
+      +'Criado por: <strong style="color:var(--ink2);">'+(a.gestor_nome||'—')+'</strong>'
+    +'</div>';
+  
+  // Mostrar botões só se tem permissão
+  var btnEditar = document.getElementById('btnEditarAgend');
+  var btnExcluir = document.getElementById('btnExcluirAgend');
+  if(btnEditar) btnEditar.style.display = podeGerenciar ? '' : 'none';
+  if(btnExcluir) btnExcluir.style.display = podeGerenciar ? '' : 'none';
+  
+  modal.classList.add('open');
+}
+
+function abrirModalNovoAgendamento(){
+  agendEditandoId = null;
+  document.getElementById('modalAgendTitulo').textContent = 'Novo Agendamento';
+  document.getElementById('agendTitulo').value = '';
+  document.getElementById('agendData').value = new Date().toISOString().slice(0,10);
+  document.getElementById('agendTipo').value = 'aula';
+  document.getElementById('agendFaseAlvo').value = 'todos';
+  document.getElementById('agendDescricao').value = '';
+  document.getElementById('agendArquivo').value = '';
+  document.getElementById('agendArquivoAtual').textContent = '';
+  document.getElementById('agendPresencaTodos').checked = true;
+  document.getElementById('agendListaEstagiarios').style.display = 'none';
+  renderListaEstagiariosPresenca([]);
+  document.getElementById('modalAgendamento').classList.add('open');
+}
+
+function abrirModalEditarAgendamento(id){
+  var a = agendamentosCache.find(function(x){ return x.id === id; });
+  if(!a) return;
+  
+  agendEditandoId = id;
+  document.getElementById('modalAgendTitulo').textContent = 'Editar Agendamento';
+  document.getElementById('agendTitulo').value = a.titulo || '';
+  document.getElementById('agendData').value = a.data || '';
+  document.getElementById('agendTipo').value = a.tipo || 'aula';
+  document.getElementById('agendFaseAlvo').value = a.fase_alvo || 'todos';
+  document.getElementById('agendDescricao').value = a.descricao || '';
+  document.getElementById('agendArquivo').value = '';
+  document.getElementById('agendArquivoAtual').textContent = a.arquivo_nome ? '📎 Atual: ' + a.arquivo_nome + ' (envie um novo para substituir)' : '';
+  
+  var ausentes = (a.presenca || []).filter(function(p){ return !p.presente; });
+  if(ausentes.length === 0){
+    document.getElementById('agendPresencaTodos').checked = true;
+    document.getElementById('agendListaEstagiarios').style.display = 'none';
+  } else {
+    document.getElementById('agendPresencaParcial').checked = true;
+    document.getElementById('agendListaEstagiarios').style.display = 'block';
+  }
+  renderListaEstagiariosPresenca(a.presenca || []);
+  
+  document.getElementById('modalAgendDetalhes').classList.remove('open');
+  document.getElementById('modalAgendamento').classList.add('open');
+}
+
+function getEstagiariosPorFase(fase){
+  if(fase === 'todos') return S.ests;
+  return S.ests.filter(function(e){ return getFaseEstagiario(e) === fase; });
+}
+
+function renderListaEstagiariosPresenca(presencaAtual){
+  var fase = document.getElementById('agendFaseAlvo').value;
+  var ests = getEstagiariosPorFase(fase);
+  var lista = document.getElementById('agendListaEstagiarios');
+  
+  if(ests.length === 0){
+    lista.innerHTML = '<div style="font-size:12px;color:var(--ink3);text-align:center;padding:10px;">Nenhum estagiário nessa fase.</div>';
+    return;
+  }
+  
+  var h = '<div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">Desmarque quem faltou:</div>';
+  ests.forEach(function(e){
+    var registro = presencaAtual.find(function(p){ return p.estagiario_id === e.id; });
+    var presente = registro ? registro.presente : true;
+    h += '<label style="display:flex;align-items:center;gap:8px;padding:6px;font-size:12px;cursor:pointer;border-radius:6px;" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'transparent\'">'
+      +'<input type="checkbox" class="agendPresChk" data-eid="'+e.id+'" '+(presente?'checked':'')+'>'
+      +'<span>'+e.nome+'</span>'
+      +'</label>';
+  });
+  lista.innerHTML = h;
+}
+
+async function salvarAgendamento(){
+  var titulo = document.getElementById('agendTitulo').value.trim();
+  var data = document.getElementById('agendData').value;
+  var tipo = document.getElementById('agendTipo').value;
+  var faseAlvo = document.getElementById('agendFaseAlvo').value;
+  var descricao = document.getElementById('agendDescricao').value.trim();
+  var presencaTipo = document.querySelector('input[name="agendPresenca"]:checked').value;
+  
+  if(!titulo){ alert('Informe o título.'); return; }
+  if(!data){ alert('Informe a data.'); return; }
+  
+  // Identificar quem está salvando
+  var gestorId = null;
+  var gestorNome = 'Tutora Kamilla';
+  if(modoGestor && gestorLogado){
+    gestorId = gestorLogado.id;
+    gestorNome = gestorLogado.nome || gestorLogado.funcional || 'Gestor';
+  } else if(editor){
+    gestorId = 'tutora';
+    gestorNome = 'Tutora Kamilla';
+  }
+  
+  // Montar lista de presença
+  var ests = getEstagiariosPorFase(faseAlvo);
+  var presenca = [];
+  if(presencaTipo === 'todos'){
+    ests.forEach(function(e){
+      presenca.push({ estagiario_id: e.id, presente: true });
+    });
+  } else {
+    var chks = document.querySelectorAll('.agendPresChk');
+    chks.forEach(function(chk){
+      presenca.push({
+        estagiario_id: chk.getAttribute('data-eid'),
+        presente: chk.checked
+      });
+    });
+  }
+  
+  // Upload de arquivo (se houver)
+  var arquivoInput = document.getElementById('agendArquivo');
+  var arquivoUrl = null;
+  var arquivoNome = null;
+  
+  // Manter arquivo existente se estiver editando e não enviou novo
+  if(agendEditandoId){
+    var existente = agendamentosCache.find(function(x){ return x.id === agendEditandoId; });
+    if(existente){
+      arquivoUrl = existente.arquivo_url;
+      arquivoNome = existente.arquivo_nome;
+    }
+  }
+  
+  if(arquivoInput.files && arquivoInput.files[0]){
+    var file = arquivoInput.files[0];
+    var ext = file.name.split('.').pop();
+    var path = 'agendamentos/' + Date.now() + '_' + Math.random().toString(36).substring(2,8) + '.' + ext;
+    
+    try {
+      var upRes = await sb.storage.from('arquivos').upload(path, file);
+      if(upRes.error){
+        console.warn('Erro upload (continuando sem arquivo):', upRes.error);
+        // Salvar só o nome se o storage não estiver configurado
+        arquivoNome = file.name;
+      } else {
+        var urlRes = sb.storage.from('arquivos').getPublicUrl(path);
+        arquivoUrl = urlRes.data.publicUrl;
+        arquivoNome = file.name;
+      }
+    } catch(err){
+      console.warn('Storage indisponível, salvando só nome:', err);
+      arquivoNome = file.name;
+    }
+  }
+  
+  var dados = {
+    gestor_id: gestorId,
+    gestor_nome: gestorNome,
+    titulo: titulo,
+    descricao: descricao,
+    data: data,
+    tipo: tipo,
+    fase_alvo: faseAlvo,
+    arquivo_url: arquivoUrl,
+    arquivo_nome: arquivoNome,
+    presenca: presenca
+  };
+  
+  try {
+    var r;
+    if(agendEditandoId){
+      r = await sb.from('agendamentos').update(JSON.parse(JSON.stringify(dados))).eq('id', agendEditandoId).select().single();
+    } else {
+      r = await sb.from('agendamentos').insert(JSON.parse(JSON.stringify(dados))).select().single();
+    }
+    
+    if(r.error){
+      console.error('Erro salvando agendamento:', r.error);
+      alert('Erro ao salvar: ' + (r.error.message || 'desconhecido'));
+      return;
+    }
+    
+    await carregarAgendamentos();
+    renderAgendamentos();
+    document.getElementById('modalAgendamento').classList.remove('open');
+    agendEditandoId = null;
+  } catch(e){
+    console.error('Erro:', e);
+    alert('Erro ao salvar agendamento.');
+  }
+}
+
+async function excluirAgendamento(){
+  if(!agendVisualizandoId) return;
+  if(!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+  
+  try {
+    var r = await sb.from('agendamentos').delete().eq('id', agendVisualizandoId);
+    if(r.error){
+      alert('Erro ao excluir: ' + r.error.message);
+      return;
+    }
+    await carregarAgendamentos();
+    renderAgendamentos();
+    document.getElementById('modalAgendDetalhes').classList.remove('open');
+    agendVisualizandoId = null;
+  } catch(e){
+    console.error(e);
+    alert('Erro ao excluir.');
+  }
+}
+
+// Listeners do modal de Agendamentos
+function initAgendamentosListeners(){
+  var btnNovo = document.getElementById('btnNovoAgendamento');
+  if(btnNovo) btnNovo.addEventListener('click', abrirModalNovoAgendamento);
+  
+  var btnCancel = document.getElementById('btnCancelAgend');
+  if(btnCancel) btnCancel.addEventListener('click', function(){
+    document.getElementById('modalAgendamento').classList.remove('open');
+  });
+  
+  var btnSalvar = document.getElementById('btnSalvarAgend');
+  if(btnSalvar) btnSalvar.addEventListener('click', salvarAgendamento);
+  
+  var btnFechar = document.getElementById('btnFecharAgendDetalhes');
+  if(btnFechar) btnFechar.addEventListener('click', function(){
+    document.getElementById('modalAgendDetalhes').classList.remove('open');
+  });
+  
+  var btnEditar = document.getElementById('btnEditarAgend');
+  if(btnEditar) btnEditar.addEventListener('click', function(){
+    if(agendVisualizandoId) abrirModalEditarAgendamento(agendVisualizandoId);
+  });
+  
+  var btnExcluir = document.getElementById('btnExcluirAgend');
+  if(btnExcluir) btnExcluir.addEventListener('click', excluirAgendamento);
+  
+  // Radio presença
+  document.querySelectorAll('input[name="agendPresenca"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      var lista = document.getElementById('agendListaEstagiarios');
+      if(this.value === 'parcial'){
+        lista.style.display = 'block';
+        renderListaEstagiariosPresenca([]);
+      } else {
+        lista.style.display = 'none';
+      }
+    });
+  });
+  
+  // Mudança de fase atualiza lista
+  var faseSelect = document.getElementById('agendFaseAlvo');
+  if(faseSelect) faseSelect.addEventListener('change', function(){
+    var presenca = document.querySelector('input[name="agendPresenca"]:checked').value;
+    if(presenca === 'parcial'){
+      renderListaEstagiariosPresenca([]);
+    }
+  });
+  
+  // Filtros
+  var fFase = document.getElementById('filtroAgendFase');
+  if(fFase) fFase.addEventListener('change', renderAgendamentos);
+  
+  var fTipo = document.getElementById('filtroAgendTipo');
+  if(fTipo) fTipo.addEventListener('change', renderAgendamentos);
+}
+
+initAgendamentosListeners();
+
+// Carregar agendamentos ao trocar pra página
+document.querySelectorAll('[data-page="agendamentos"]').forEach(function(item){
+  item.addEventListener('click', async function(){
+    await carregarAgendamentos();
+    renderAgendamentos();
+  });
 });
 
 
