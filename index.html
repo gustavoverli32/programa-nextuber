@@ -1389,7 +1389,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v9 - agendamentos');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v10 - agendamentos fix');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -4374,9 +4374,28 @@ var agendEditandoId = null;
 var agendVisualizandoId = null;
 
 async function carregarAgendamentos(){
+  // Aguardar sb estar disponível
+  if(typeof sb === 'undefined' || !sb){
+    console.warn('Cliente Supabase ainda não inicializado');
+    agendamentosCache = [];
+    return;
+  }
   try {
     var r = await sb.from('agendamentos').select('*').order('data', {ascending: false});
     if(r.error){
+      // Se a tabela não existe, mostra mensagem amigável
+      if(r.error.message && r.error.message.indexOf('does not exist') >= 0){
+        console.warn('Tabela "agendamentos" não existe no Supabase. Execute o SQL para criá-la.');
+        agendamentosCache = [];
+        var el = document.getElementById('agendamentosList');
+        if(el){
+          el.innerHTML = '<div style="background:#FEF2F2;border:1px solid #DC2626;border-radius:10px;padding:16px;color:#991B1B;font-size:13px;">' 
+            +'<strong>⚠ Tabela "agendamentos" não encontrada no Supabase.</strong><br><br>' 
+            +'Acesse o painel do Supabase → SQL Editor e execute o comando CREATE TABLE fornecido pelo Claude.'
+            +'</div>';
+        }
+        return;
+      }
       console.error('Erro carregando agendamentos:', r.error);
       agendamentosCache = [];
     } else {
@@ -4389,7 +4408,12 @@ async function carregarAgendamentos(){
 }
 
 function getFaseEstagiario(e){
-  var meses = mesesPrograma(e);
+  if(!e || !e.perfil || !e.perfil.inicio) return 'fase1';
+  var s = new Date(e.perfil.inicio);
+  var now = new Date();
+  if(isNaN(s.getTime())) return 'fase1';
+  var meses = (now.getFullYear() - s.getFullYear()) * 12 + (now.getMonth() - s.getMonth());
+  if(meses < 0) meses = 0;
   if(meses < 3) return 'fase1';
   if(meses < 6) return 'fase2';
   return 'fase3';
@@ -4602,6 +4626,7 @@ function abrirModalEditarAgendamento(id){
 }
 
 function getEstagiariosPorFase(fase){
+  if(typeof S === 'undefined' || !S || !S.ests) return [];
   if(fase === 'todos') return S.ests;
   return S.ests.filter(function(e){ return getFaseEstagiario(e) === fase; });
 }
