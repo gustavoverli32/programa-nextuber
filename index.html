@@ -1394,7 +1394,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v14 - agencia');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v15 - cards produtos');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2078,10 +2078,22 @@ function renderOverviewKpis(){
   var totalEst = lista.length;
   var totalProducao = 0;
   var tri = trimestreRef();
+  var totalEquilibrio = 0;
+  var totalSeguros = 0;
+  var totalPIC = 0;
+  var totalCombinaqui = 0;
+  
   lista.forEach(function(e){
     var p = getProducaoTri(e.id, tri);
     totalProducao += parseFloat(p.producao)||0;
+    // Equilíbrio = soma de INSS, OP, EP, Creditário (4 modalidades)
+    totalEquilibrio += getTotalTrimestreModalidades(e.id, tri);
+    // Outros produtos (índices: 0=Seguros, 1=PIC, 2=Combinaqui)
+    totalSeguros    += getTotalTrimestreOutroProduto(e.id, tri, 0);
+    totalPIC        += getTotalTrimestreOutroProduto(e.id, tri, 1);
+    totalCombinaqui += getTotalTrimestreOutroProduto(e.id, tri, 2);
   });
+  
   var porTrilha = {iniciante:0, intermediario:0, avancado:0};
   lista.forEach(function(e){
       var k = getEffectiveTrilhaKey(e);
@@ -2091,9 +2103,10 @@ function renderOverviewKpis(){
   var cards = [
     {label:'Estagiários ativos', valor:totalEst, cor:'var(--ink)', bg:'var(--bg)'},
     {label:'Produção do trimestre', valor:fmtMilhar(totalProducao), cor:'#16A34A', bg:'#DCFCE7'},
-    {label:'Decolar', valor:porTrilha.iniciante, cor:'#EC7000', bg:'#FFF3E8'},
-    {label:'Evoluir', valor:porTrilha.intermediario, cor:'#B45309', bg:'#FEF3C7'},
-    {label:'Impactar', valor:porTrilha.avancado, cor:'#166534', bg:'#DCFCE7'}
+    {label:'Equilíbrio (crédito)', valor:fmtMilhar(totalEquilibrio), cor:'#2196F3', bg:'#DBEAFE'},
+    {label:'Seguros', valor:fmtMilhar(totalSeguros), cor:'#8B5CF6', bg:'#EDE9FE'},
+    {label:'PIC', valor:fmtMilhar(totalPIC), cor:'#06B6D4', bg:'#CFFAFE'},
+    {label:'Combinaqui', valor:fmtMilhar(totalCombinaqui), cor:'#F97316', bg:'#FFEDD5'}
   ];
 
   el.innerHTML = cards.map(function(c){
@@ -2369,12 +2382,11 @@ var CORES_MODALIDADES = {
 };
 
 // ── OUTROS PRODUTOS ──
-var OUTROS_PRODUTOS = ['Seguros', 'PIC', 'Combinaqui', 'Autobank', 'Consórcios'];
+var OUTROS_PRODUTOS = ['Seguros', 'PIC', 'Combinaqui', 'Consórcios'];
 var CORES_OUTROS = {
   'Seguros': '#8B5CF6',
   'PIC': '#06B6D4',
   'Combinaqui': '#F97316',
-  'Autobank': '#EF4444',
   'Consórcios': '#10B981'
 };
 
