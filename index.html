@@ -1389,7 +1389,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v12 - sb defensivo');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v13 - card clique');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -1678,6 +1678,10 @@ var TRILHA_INFO = {
 };
 
 var editor=false, panelIdx=-1, cadIdx=-1, renameIdx=-1, activeTrilha='iniciante', activeConteudoTab='iniciante', editandoConteudoIdx=-1, modoGestor=false, gestorLogado=null, pSelectedMesIdx=0;
+// Expor em window para acesso global em funções como salvar/editar agendamento
+window.editor = editor;
+window.modoGestor = modoGestor;
+window.gestorLogado = gestorLogado;
 
 // ── PERSIST ────────────────────────────────────────────────────────────────
 // persist is now async — call with await or fire-and-forget
@@ -3647,7 +3651,7 @@ function openLogin(){ document.getElementById('loginPwd').value=''; document.get
 function cancelLogin(){ document.getElementById('loginOv').classList.remove('open'); }
 function doLogin(){
   if(document.getElementById('loginPwd').value===PWD){
-    editor=true; document.getElementById('loginOv').classList.remove('open'); applyMode();
+    editor=true; window.editor=true; document.getElementById('loginOv').classList.remove('open'); applyMode();
   } else { document.getElementById('loginErr').classList.add('show'); document.getElementById('loginPwd').value=''; document.getElementById('loginPwd').focus(); }
 }
 function setCadInputState(){
@@ -3697,6 +3701,9 @@ function applyModoGestor(){
 function logoutGestor(){
   modoGestor = false;
   gestorLogado = null;
+  window.modoGestor = false;
+  window.gestorLogado = null;
+  window.editor = false;
   applyMode();
   goPage('overview');
 }
@@ -3976,6 +3983,8 @@ document.addEventListener('DOMContentLoaded', function(){
     if(gestor){
       modoGestor = true;
       gestorLogado = gestor;
+      window.modoGestor = true;
+      window.gestorLogado = gestor;
       document.getElementById('loginOv').classList.remove('open');
       document.getElementById('loginGestorFunc').value = '';
       document.getElementById('loginGestorSenha').value = '';
@@ -4526,8 +4535,15 @@ function renderAgendamentos(){
 
 function podeGerenciarAgendamento(a){
   // Tutora pode tudo. Gestor só edita/exclui se for o autor
-  if(editor) return true;
-  if(modoGestor && gestorLogado && a.gestor_id === gestorLogado.id) return true;
+  try {
+    var _editor = (typeof editor !== 'undefined') ? editor : (window.editor || false);
+    var _modoGestor = (typeof modoGestor !== 'undefined') ? modoGestor : (window.modoGestor || false);
+    var _gestorLogado = (typeof gestorLogado !== 'undefined') ? gestorLogado : (window.gestorLogado || null);
+    if(_editor) return true;
+    if(_modoGestor && _gestorLogado && a.gestor_id === _gestorLogado.id) return true;
+  } catch(e){
+    console.warn('Erro em podeGerenciarAgendamento:', e);
+  }
   return false;
 }
 
