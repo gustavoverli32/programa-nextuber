@@ -725,6 +725,10 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <input class="field-in" type="text" id="cadFunc" placeholder="000000000" maxlength="9" inputmode="numeric">
         </div>
         <div class="field-grp">
+          <div class="field-lbl">Agência</div>
+          <input class="field-in" type="text" id="cadAgencia" placeholder="0000" maxlength="6" inputmode="numeric">
+        </div>
+        <div class="field-grp">
           <div class="field-lbl">Data de início</div>
           <input class="field-in" type="date" id="cadInicio">
         </div>
@@ -889,6 +893,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
     <div class="psec">
       <div class="psec-ttl">Informações</div>
       <div class="prow"><span class="prow-lbl">Funcional</span><span class="prow-val" id="pFunc" style="font-family:monospace">—</span></div>
+      <div class="prow"><span class="prow-lbl">Agência</span><span class="prow-val" id="pAgencia" style="font-family:monospace">—</span></div>
       <div class="prow"><span class="prow-lbl">Início</span><span class="prow-val" id="pInicio">—</span></div>
       <div class="prow"><span class="prow-lbl">Tempo no programa</span><span class="prow-val" id="pTempo">—</span></div>
       <div class="prow"><span class="prow-lbl">GA</span><span class="prow-val" id="pGA">—</span></div>
@@ -1389,7 +1394,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v13 - card clique');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v14 - agencia');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -3137,6 +3142,7 @@ function renderCards(){
     var ci=currMonth(e);
     var done=e.meses.filter(function(s){return s.indexOf('Concluído')>=0||s.indexOf('Renovado')>=0;}).length;
     var hasFn=e.perfil&&e.perfil.funcional;
+    var ag=e.perfil&&e.perfil.agencia?e.perfil.agencia:null;
     var t=e.perfil&&e.perfil.inicio?calcTempo(e.perfil.inicio):null;
     var cert=e.perfil&&e.perfil.certificacao?e.perfil.certificacao:null;
     var bday=isAniversario(e);
@@ -3148,7 +3154,7 @@ function renderCards(){
       return '<span class="nd'+(cls?' '+cls:'')+'" title="'+ML[i]+': '+sShort(s)+'"></span>';
     }).join('');
     return '<div class="notion-card'+(panelIdx===e.id?' nc-active':'')+'" data-eid="'+e.id+'" style="'+cardBorder+'">'
-      +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
+      +'<div class="nc-top"><div class="nc-avatar">'+(bday?'🎂':ini(e.nome))+'</div><div class="nc-name">'+e.nome+(ag?' <span style="font-size:11px;color:var(--ink3);font-weight:500;">· Ag '+ag+'</span>':'')+(bday?' <span style="font-size:11px;color:var(--or);">Aniversário hoje!</span>':'')+'</div><span class="nc-arrow">→</span></div>'
       +'<div class="nc-meta">'
         +(hasFn?'<span class="nc-chip func">#'+e.perfil.funcional+'</span>':'')
         +(t?'<span class="nc-chip">◷ '+t+'</span>':'')
@@ -3185,6 +3191,8 @@ function openPanel(idx){
   document.getElementById('pFn').textContent=e.perfil&&e.perfil.funcional?'#'+e.perfil.funcional:'Sem funcional';
   // idade removida
   document.getElementById('pFunc').textContent=e.perfil&&e.perfil.funcional?e.perfil.funcional:'—';
+  var pAgEl = document.getElementById('pAgencia');
+  if(pAgEl) pAgEl.textContent = e.perfil&&e.perfil.agencia?e.perfil.agencia:'—';
   // GA e GGA
   var gaFunc = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:null;
   var ggaFunc = e.perfil&&e.perfil.gga_funcional?e.perfil.gga_funcional:null;
@@ -3454,6 +3462,8 @@ function loadEditCad(idx){
   document.getElementById('cadNome').value = e.nome;
   // idade removida
   document.getElementById('cadFunc').value = e.perfil&&e.perfil.funcional?e.perfil.funcional:'';
+  var agEl = document.getElementById('cadAgencia');
+  if(agEl) agEl.value = e.perfil&&e.perfil.agencia?e.perfil.agencia:'';
   document.getElementById('cadInicio').value = e.perfil&&e.perfil.inicio?e.perfil.inicio:'';
   var gaEl = document.getElementById('cadGAFunc');
   if(gaEl) gaEl.value = e.perfil&&e.perfil.ga_funcional?e.perfil.ga_funcional:'';
@@ -3495,6 +3505,7 @@ async function savePerfil(){
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
+  var agencia = ((document.getElementById('cadAgencia')||{}).value||'').replace(/[^0-9]/g,'').slice(0,6);
   var gaVal = (document.getElementById('cadGAFunc')||{}).value||'';
   var ggaVal = (document.getElementById('cadGGAFunc')||{}).value||'';
   var anivDia = (document.getElementById('cadAnivDia')||{}).value||'';
@@ -3502,6 +3513,7 @@ async function savePerfil(){
   var mesAniversario = (anivDia && anivMes) ? anivDia+'-'+anivMes : null;
   var perfil = {
     funcional: func,
+    agencia: agencia,
     inicio: document.getElementById('cadInicio').value,
     ga_funcional: gaVal.replace(/[^0-9]/g,'').slice(0,9),
     gga_funcional: ggaVal.replace(/[^0-9]/g,'').slice(0,9),
@@ -3555,7 +3567,7 @@ async function savePerfil(){
   
   // reset form
   cadIdx = -1;
-  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['cadNome','cadFunc','cadAgencia','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('cadAddBtn').textContent = '+ Adicionar estagiário';
   document.getElementById('cadAv').textContent = '?';
   document.getElementById('cadAv').classList.remove('filled');
@@ -3643,7 +3655,7 @@ function goPage(id){
     }
   }
   if(id==='trilhas') renderTrilha();
-  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
+  if(id==='cadastro'){ cadIdx=-1; document.getElementById('cadAddBtn').textContent='+ Adicionar estagiário'; renderGestoresList(); ['cadNome','cadFunc','cadAgencia','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); updateCadPreview(); setCadInputState(); renderCadList(); }
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
@@ -3656,7 +3668,7 @@ function doLogin(){
 }
 function setCadInputState(){
   var dis=!editor && !isGGA();
-  ['cadNome','cadFunc','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){
+  ['cadNome','cadFunc','cadAgencia','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=dis;
   });
   var btn=document.getElementById('cadAddBtn'); if(btn) btn.disabled=dis;
@@ -4243,6 +4255,8 @@ document.getElementById('btnObs').addEventListener('click', function(){
     this.value = this.value.replace(/[^0-9]/g,'').slice(0,9);
   });
   document.getElementById('cadFunc').addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,'').slice(0,9); });
+  var agEl2 = document.getElementById('cadAgencia');
+  if(agEl2) agEl2.addEventListener('input', function(){ this.value=this.value.replace(/[^0-9]/g,'').slice(0,6); });
   document.getElementById('cadNome').addEventListener('input', updateCadPreview);
   setCadInputState();
 
