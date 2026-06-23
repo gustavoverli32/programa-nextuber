@@ -1389,7 +1389,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v10 - agendamentos fix');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v11 - salvar agendamento');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -4374,22 +4374,31 @@ var agendEditandoId = null;
 var agendVisualizandoId = null;
 
 async function carregarAgendamentos(){
-  // Aguardar sb estar disponível
-  if(typeof sb === 'undefined' || !sb){
+  // Resolver cliente Supabase (tenta escopo local e window)
+  var _sb = null;
+  try {
+    if(typeof sb !== 'undefined' && sb) _sb = sb;
+    else if(typeof window !== 'undefined' && window.sb) _sb = window.sb;
+  } catch(e){}
+  
+  if(!_sb){
     console.warn('Cliente Supabase ainda não inicializado');
     agendamentosCache = [];
+    var el = document.getElementById('agendamentosList');
+    if(el) el.innerHTML = '<div style="background:#FEF2F2;border:1px solid #DC2626;border-radius:10px;padding:16px;color:#991B1B;font-size:13px;">⚠ Cliente Supabase não inicializado. Recarregue a página.</div>';
     return;
   }
+  
   try {
-    var r = await sb.from('agendamentos').select('*').order('data', {ascending: false});
+    var r = await _sb.from('agendamentos').select('*').order('data', {ascending: false});
     if(r.error){
       // Se a tabela não existe, mostra mensagem amigável
       if(r.error.message && r.error.message.indexOf('does not exist') >= 0){
         console.warn('Tabela "agendamentos" não existe no Supabase. Execute o SQL para criá-la.');
         agendamentosCache = [];
-        var el = document.getElementById('agendamentosList');
-        if(el){
-          el.innerHTML = '<div style="background:#FEF2F2;border:1px solid #DC2626;border-radius:10px;padding:16px;color:#991B1B;font-size:13px;">' 
+        var el2 = document.getElementById('agendamentosList');
+        if(el2){
+          el2.innerHTML = '<div style="background:#FEF2F2;border:1px solid #DC2626;border-radius:10px;padding:16px;color:#991B1B;font-size:13px;">' 
             +'<strong>⚠ Tabela "agendamentos" não encontrada no Supabase.</strong><br><br>' 
             +'Acesse o painel do Supabase → SQL Editor e execute o comando CREATE TABLE fornecido pelo Claude.'
             +'</div>';
@@ -4664,13 +4673,23 @@ async function salvarAgendamento(){
   if(!titulo){ alert('Informe o título.'); return; }
   if(!data){ alert('Informe a data.'); return; }
   
-  // Identificar quem está salvando
+  // Identificar quem está salvando (defensivo contra escopo)
   var gestorId = null;
   var gestorNome = 'Tutora Kamilla';
-  if(modoGestor && gestorLogado){
-    gestorId = gestorLogado.id;
-    gestorNome = gestorLogado.nome || gestorLogado.funcional || 'Gestor';
-  } else if(editor){
+  try {
+    var _modoGestor = (typeof modoGestor !== 'undefined') ? modoGestor : (typeof window.modoGestor !== 'undefined' ? window.modoGestor : false);
+    var _gestorLogado = (typeof gestorLogado !== 'undefined') ? gestorLogado : (typeof window.gestorLogado !== 'undefined' ? window.gestorLogado : null);
+    var _editor = (typeof editor !== 'undefined') ? editor : (typeof window.editor !== 'undefined' ? window.editor : false);
+    
+    if(_modoGestor && _gestorLogado){
+      gestorId = _gestorLogado.id || null;
+      gestorNome = _gestorLogado.nome || _gestorLogado.funcional || 'Gestor';
+    } else if(_editor){
+      gestorId = 'tutora';
+      gestorNome = 'Tutora Kamilla';
+    }
+  } catch(err){
+    console.warn('Erro ao identificar gestor, salvando como Tutora:', err);
     gestorId = 'tutora';
     gestorNome = 'Tutora Kamilla';
   }
@@ -4715,7 +4734,6 @@ async function salvarAgendamento(){
       var upRes = await sb.storage.from('arquivos').upload(path, file);
       if(upRes.error){
         console.warn('Erro upload (continuando sem arquivo):', upRes.error);
-        // Salvar só o nome se o storage não estiver configurado
         arquivoNome = file.name;
       } else {
         var urlRes = sb.storage.from('arquivos').getPublicUrl(path);
@@ -4741,6 +4759,8 @@ async function salvarAgendamento(){
     presenca: presenca
   };
   
+  console.log('Salvando agendamento:', dados);
+  
   try {
     var r;
     if(agendEditandoId){
@@ -4761,7 +4781,7 @@ async function salvarAgendamento(){
     agendEditandoId = null;
   } catch(e){
     console.error('Erro:', e);
-    alert('Erro ao salvar agendamento.');
+    alert('Erro ao salvar agendamento: ' + (e.message || e));
   }
 }
 
