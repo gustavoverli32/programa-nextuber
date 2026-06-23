@@ -1389,10 +1389,11 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v11 - salvar agendamento');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v12 - sb defensivo');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+window.sb = sb;
 var SOPTS = ['⬜ Pendente','🔄 Em andamento','✅ Concluído','⚠️ Atenção','🔁 Renovado'];
 var ML = ['Mês 1','Mês 2','Mês 3','Mês 4','Mês 5','Mês 6'];
 
@@ -4673,13 +4674,26 @@ async function salvarAgendamento(){
   if(!titulo){ alert('Informe o título.'); return; }
   if(!data){ alert('Informe a data.'); return; }
   
+  // Resolver cliente Supabase (defensivo contra escopo)
+  var _sb = null;
+  try {
+    if(typeof sb !== 'undefined' && sb) _sb = sb;
+    else if(typeof window !== 'undefined' && window.sb) _sb = window.sb;
+  } catch(e){}
+  
+  if(!_sb){
+    alert('Cliente Supabase não está disponível. Recarregue a página (Ctrl+Shift+R).');
+    return;
+  }
+  
   // Identificar quem está salvando (defensivo contra escopo)
   var gestorId = null;
   var gestorNome = 'Tutora Kamilla';
   try {
-    var _modoGestor = (typeof modoGestor !== 'undefined') ? modoGestor : (typeof window.modoGestor !== 'undefined' ? window.modoGestor : false);
-    var _gestorLogado = (typeof gestorLogado !== 'undefined') ? gestorLogado : (typeof window.gestorLogado !== 'undefined' ? window.gestorLogado : null);
-    var _editor = (typeof editor !== 'undefined') ? editor : (typeof window.editor !== 'undefined' ? window.editor : false);
+    var _modoGestor = false, _gestorLogado = null, _editor = false;
+    try { _modoGestor = (typeof modoGestor !== 'undefined') ? modoGestor : (window.modoGestor || false); } catch(e){ _modoGestor = window.modoGestor || false; }
+    try { _gestorLogado = (typeof gestorLogado !== 'undefined') ? gestorLogado : (window.gestorLogado || null); } catch(e){ _gestorLogado = window.gestorLogado || null; }
+    try { _editor = (typeof editor !== 'undefined') ? editor : (window.editor || false); } catch(e){ _editor = window.editor || false; }
     
     if(_modoGestor && _gestorLogado){
       gestorId = _gestorLogado.id || null;
@@ -4731,12 +4745,12 @@ async function salvarAgendamento(){
     var path = 'agendamentos/' + Date.now() + '_' + Math.random().toString(36).substring(2,8) + '.' + ext;
     
     try {
-      var upRes = await sb.storage.from('arquivos').upload(path, file);
+      var upRes = await _sb.storage.from('arquivos').upload(path, file);
       if(upRes.error){
         console.warn('Erro upload (continuando sem arquivo):', upRes.error);
         arquivoNome = file.name;
       } else {
-        var urlRes = sb.storage.from('arquivos').getPublicUrl(path);
+        var urlRes = _sb.storage.from('arquivos').getPublicUrl(path);
         arquivoUrl = urlRes.data.publicUrl;
         arquivoNome = file.name;
       }
@@ -4764,9 +4778,9 @@ async function salvarAgendamento(){
   try {
     var r;
     if(agendEditandoId){
-      r = await sb.from('agendamentos').update(JSON.parse(JSON.stringify(dados))).eq('id', agendEditandoId).select().single();
+      r = await _sb.from('agendamentos').update(JSON.parse(JSON.stringify(dados))).eq('id', agendEditandoId).select().single();
     } else {
-      r = await sb.from('agendamentos').insert(JSON.parse(JSON.stringify(dados))).select().single();
+      r = await _sb.from('agendamentos').insert(JSON.parse(JSON.stringify(dados))).select().single();
     }
     
     if(r.error){
@@ -4789,8 +4803,16 @@ async function excluirAgendamento(){
   if(!agendVisualizandoId) return;
   if(!confirm('Tem certeza que deseja excluir este agendamento?')) return;
   
+  // Resolver cliente Supabase
+  var _sb = null;
   try {
-    var r = await sb.from('agendamentos').delete().eq('id', agendVisualizandoId);
+    if(typeof sb !== 'undefined' && sb) _sb = sb;
+    else if(typeof window !== 'undefined' && window.sb) _sb = window.sb;
+  } catch(e){}
+  if(!_sb){ alert('Cliente Supabase não disponível.'); return; }
+  
+  try {
+    var r = await _sb.from('agendamentos').delete().eq('id', agendVisualizandoId);
     if(r.error){
       alert('Erro ao excluir: ' + r.error.message);
       return;
