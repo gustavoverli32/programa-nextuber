@@ -1394,7 +1394,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v15 - cards produtos');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v16 - remove equilibrio');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2103,7 +2103,6 @@ function renderOverviewKpis(){
   var cards = [
     {label:'Estagiários ativos', valor:totalEst, cor:'var(--ink)', bg:'var(--bg)'},
     {label:'Produção do trimestre', valor:fmtMilhar(totalProducao), cor:'#16A34A', bg:'#DCFCE7'},
-    {label:'Equilíbrio (crédito)', valor:fmtMilhar(totalEquilibrio), cor:'#2196F3', bg:'#DBEAFE'},
     {label:'Seguros', valor:fmtMilhar(totalSeguros), cor:'#8B5CF6', bg:'#EDE9FE'},
     {label:'PIC', valor:fmtMilhar(totalPIC), cor:'#06B6D4', bg:'#CFFAFE'},
     {label:'Combinaqui', valor:fmtMilhar(totalCombinaqui), cor:'#F97316', bg:'#FFEDD5'}
