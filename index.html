@@ -829,12 +829,30 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <h3 style="font-size:15px;font-weight:600;color:var(--ink);margin:0;">Prazo para atualização de produção</h3>
         </div>
         <p style="font-size:12px;color:var(--ink3);margin:8px 0 14px;">Defina a data limite para os gestores atualizarem a produção dos estagiários. Quando o prazo se aproximar (2 dias antes), os cards ficarão amarelos. No dia do vencimento, ficarão vermelhos.</p>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        
+        <!-- Card do prazo atual (aparece quando há prazo definido) -->
+        <div id="cfgPrazoCardAtual" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Prazo definido</div>
+              <div id="cfgPrazoDataDisplay" style="font-size:18px;font-weight:600;color:var(--ink);"></div>
+              <div id="cfgPrazoStatus" style="font-size:12px;color:var(--ink3);margin-top:4px;"></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-sm" id="btnCfgAlterarPrazo" style="background:#3B82F6;color:white;border-color:#3B82F6;">Alterar</button>
+              <button class="btn-sm" id="btnCfgCancelarPrazo" style="background:#DC2626;color:white;border-color:#DC2626;">Cancelar prazo</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Formulário de definir/alterar -->
+        <div id="cfgPrazoForm" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <input type="date" id="cfgPrazoData" style="font-size:13px;border:1px solid var(--border2);border-radius:8px;padding:8px 14px;background:var(--surface);color:var(--ink);cursor:pointer;">
           <button class="btn-obs" id="btnCfgSalvarPrazo">Definir prazo</button>
+          <button class="btn-sm" id="btnCfgFecharForm" style="display:none;">Cancelar edição</button>
           <span class="obs-saved" id="cfgPrazoSaved">✓ Salvo</span>
         </div>
-        <div id="cfgPrazoAtual" style="margin-top:12px;font-size:12px;color:var(--ink3);"></div>
+        <div id="cfgPrazoAtual" style="margin-top:12px;font-size:12px;color:var(--ink3);display:none;"></div>
       </div>
 
       <!-- Placeholder para futuras configs -->
@@ -1394,7 +1412,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v16 - remove equilibrio');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v17 - avaliação + prazo + outros semanal');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -1930,17 +1948,27 @@ function renderTimeline(){
 
 function calcScore(e, triRef){
   triRef = triRef || trimestreRef();
-  // Comportamental — 40% (0-4 pts)
-  var pctC = calcPctChecks(e);
-  var notaC = (pctC/100) * 4;
-  // Resultados — 60% (0-6 pts)
   var prod = getProducaoTri(e.id, triRef);
-  var meta = parseFloat(prod.meta)||0;
-  var totalMensal = getTotalMensal(e.id, triRef);
-  var producao = totalMensal > 0 ? totalMensal : (parseFloat(prod.producao)||0);
-  var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
-  var notaR = pctR * 6;
-  return Math.min(Math.round((notaC+notaR)*10)/10, 10);
+  var meta = parseFloat(prod.meta) || 0;
+  
+  // Crédito (Equilíbrio) — 60% (0-6 pts)
+  var producaoCredito = getTotalTrimestreModalidades(e.id, triRef);
+  // fallback: se ainda usa o total mensal antigo
+  if(producaoCredito === 0){
+    var totalMensal = getTotalMensal(e.id, triRef);
+    producaoCredito = totalMensal > 0 ? totalMensal : (parseFloat(prod.producao)||0);
+  }
+  var pctCredito = meta>0 ? Math.min(producaoCredito/meta, 1) : 0;
+  var notaCredito = pctCredito * 6;
+  
+  // Produtos (Seguros, PIC, Combinaqui, Consórcios) — 40% (0-4 pts)
+  // Meta de produtos não existe explicitamente; usamos 20% da meta de crédito como meta de produtos
+  var metaProdutos = meta * 0.2;
+  var producaoProdutos = getTotalTrimestreOutros(e.id, triRef);
+  var pctProdutos = metaProdutos>0 ? Math.min(producaoProdutos/metaProdutos, 1) : 0;
+  var notaProdutos = pctProdutos * 4;
+  
+  return Math.min(Math.round((notaCredito+notaProdutos)*10)/10, 10);
 }
 
 function scoreColor(s){
@@ -2278,28 +2306,39 @@ async function loadSnapshotsHistory(eid){
 function renderAvaliacao(idx){
   var el = document.getElementById('pAvaliacao'); if(!el) return;
   var e = S.ests[idx], tri = trimestreRef();
-  var pctC = calcPctChecks(e), fc = faixaComp(pctC);
   var prod = getProducaoTri(e.id, tri);
   var meta = parseFloat(prod.meta)||0;
-  var totalMes = getTotalMensal(e.id, tri);
-  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
-  var pctR = meta>0 ? Math.round(Math.min(producao/meta, 1)*100) : 0;
-  var fr = faixaRes(pctR);
+  
+  // Crédito
+  var producaoCredito = getTotalTrimestreModalidades(e.id, tri);
+  if(producaoCredito === 0){
+    var totalMes = getTotalMensal(e.id, tri);
+    producaoCredito = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
+  }
+  var pctCredito = meta>0 ? Math.round(Math.min(producaoCredito/meta, 1)*100) : 0;
+  var fCredito = faixaRes(pctCredito);
+  
+  // Produtos
+  var metaProdutos = meta * 0.2;
+  var producaoProdutos = getTotalTrimestreOutros(e.id, tri);
+  var pctProdutos = metaProdutos>0 ? Math.round(Math.min(producaoProdutos/metaProdutos, 1)*100) : 0;
+  var fProdutos = faixaRes(pctProdutos);
+  
   var nota = calcScore(e, tri), nc = scoreColor(nota);
 
   el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
-      +'<span style="font-size:12px;color:var(--ink2);">Comportamental</span>'
-      +'<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:'+fc.bg+';color:'+fc.cor+';">● '+fc.label+'</span>'
+      +'<span style="font-size:12px;color:var(--ink2);">Crédito <span style="font-size:10px;color:var(--ink3);">(60%)</span></span>'
+      +'<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:'+fCredito.bg+';color:'+fCredito.cor+';">● '+fCredito.label+'</span>'
     +'</div>'
-    +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:3px;"><div style="width:'+pctC+'%;height:100%;background:'+fc.cor+';"></div></div>'
-    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:12px;">'+pctC+'% dos itens marcados</div>'
+    +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:3px;"><div style="width:'+Math.min(pctCredito,100)+'%;height:100%;background:'+fCredito.cor+';"></div></div>'
+    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:12px;">'+(meta>0 ? fmtMilhar(producaoCredito)+' / '+fmtMilhar(meta)+' ('+pctCredito+'%)' : 'Meta não definida')+'</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
-      +'<span style="font-size:12px;color:var(--ink2);">Resultados ('+fmtTrimestre(tri)+')</span>'
-      +'<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:'+fr.bg+';color:'+fr.cor+';">● '+fr.label+'</span>'
+      +'<span style="font-size:12px;color:var(--ink2);">Produtos <span style="font-size:10px;color:var(--ink3);">(40%)</span></span>'
+      +'<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:'+fProdutos.bg+';color:'+fProdutos.cor+';">● '+fProdutos.label+'</span>'
     +'</div>'
-    +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:3px;"><div style="width:'+Math.min(pctR,100)+'%;height:100%;background:'+fr.cor+';"></div></div>'
-    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:12px;">'+(meta>0?pctR+'% da meta':'Meta não definida')+'</div>'
+    +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:3px;"><div style="width:'+Math.min(pctProdutos,100)+'%;height:100%;background:'+fProdutos.cor+';"></div></div>'
+    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:12px;">'+(metaProdutos>0 ? fmtMilhar(producaoProdutos)+' / '+fmtMilhar(metaProdutos)+' ('+pctProdutos+'%)' : 'Meta de produtos: 20% da meta de crédito')+'</div>'
     +'<div style="border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;justify-content:space-between;">'
       +'<span style="font-size:12px;color:var(--ink2);">Nota final</span>'
       +'<span style="font-size:22px;font-weight:500;color:'+nc+';">'+nota+'<span style="font-size:13px;color:var(--ink3);">/10</span></span>'
@@ -2389,15 +2428,15 @@ var CORES_OUTROS = {
   'Consórcios': '#10B981'
 };
 
-function getProducaoOutroProduto(eid, tri, mesIdx, prodIdx){
-  var ref = tri + '-M' + mesIdx + '-OUT' + prodIdx;
+function getProducaoOutroProduto(eid, tri, mesIdx, semanaIdx, prodIdx){
+  var ref = tri + '-M' + mesIdx + '-S' + semanaIdx + '-OUT' + prodIdx;
   if(!S.producao) return 0;
   var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
   return row ? (parseFloat(row.producao) || 0) : 0;
 }
 
-async function saveProducaoOutroProduto(eid, tri, mesIdx, prodIdx, valor){
-  var ref = tri + '-M' + mesIdx + '-OUT' + prodIdx;
+async function saveProducaoOutroProduto(eid, tri, mesIdx, semanaIdx, prodIdx, valor){
+  var ref = tri + '-M' + mesIdx + '-S' + semanaIdx + '-OUT' + prodIdx;
   var r = await sb.from('producao_trimestral').upsert(JSON.parse(JSON.stringify({
     estagiario_id: eid,
     tri_ref: ref,
@@ -2411,10 +2450,28 @@ async function saveProducaoOutroProduto(eid, tri, mesIdx, prodIdx, valor){
   }
 }
 
-function getTotalMesOutros(eid, tri, mesIdx){
+// Total de um produto em uma semana (soma todos os prodIdx da semana)
+function getTotalSemanaOutros(eid, tri, mesIdx, semanaIdx){
   var total = 0;
   for(var p = 0; p < OUTROS_PRODUTOS.length; p++){
-    total += getProducaoOutroProduto(eid, tri, mesIdx, p);
+    total += getProducaoOutroProduto(eid, tri, mesIdx, semanaIdx, p);
+  }
+  return total;
+}
+
+// Total de um produto no mês (soma as 4 semanas)
+function getTotalMesOutroProduto(eid, tri, mesIdx, prodIdx){
+  var total = 0;
+  for(var s = 1; s <= 4; s++){
+    total += getProducaoOutroProduto(eid, tri, mesIdx, s, prodIdx);
+  }
+  return total;
+}
+
+function getTotalMesOutros(eid, tri, mesIdx){
+  var total = 0;
+  for(var s = 1; s <= 4; s++){
+    total += getTotalSemanaOutros(eid, tri, mesIdx, s);
   }
   return total;
 }
@@ -2430,7 +2487,7 @@ function getTotalTrimestreOutros(eid, tri){
 function getTotalTrimestreOutroProduto(eid, tri, prodIdx){
   var total = 0;
   for(var mi = 1; mi <= 3; mi++){
-    total += getProducaoOutroProduto(eid, tri, mi, prodIdx);
+    total += getTotalMesOutroProduto(eid, tri, mi, prodIdx);
   }
   return total;
 }
@@ -2635,35 +2692,55 @@ function renderResultadosForTri(idx, tri){
       +'</div>';
   }
   
-  // ── OUTROS PRODUTOS (mensal) ──
+  // ── OUTROS PRODUTOS (semanal - mesmo formato do crédito) ──
   var totalOutrosMes = getTotalMesOutros(e.id, tri, mesIdx);
   
   h += '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--bg);margin-bottom:14px;margin-top:8px;">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
       +'<span style="font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">'+mesNome+' - Outros Produtos</span>'
+      +'<span style="font-size:12px;font-weight:600;color:var(--ink2);">Total: '+fmtMilhar(totalOutrosMes)+'</span>'
     +'</div>'
     +'<div style="overflow-x:auto;">'
     +'<table style="width:100%;border-collapse:collapse;font-size:11px;background:var(--surface);border-radius:6px;overflow:hidden;">'
     +'<thead><tr style="background:var(--bg);">'
-    +'<th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Produto</th>'
-    +'<th style="padding:8px 10px;text-align:center;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);width:50%;">Valor mensal</th>'
+    +'<th style="padding:6px 4px;text-align:left;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;border:1px solid var(--border);">Produto</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 1</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 2</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 3</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);">Sem 4</th>'
+    +'<th style="padding:6px 4px;font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;border:1px solid var(--border);background:var(--bg);">Total</th>'
     +'</tr></thead>'
     +'<tbody>';
   
   OUTROS_PRODUTOS.forEach(function(prod, prodIdx){
-    var val = getProducaoOutroProduto(e.id, tri, mesIdx, prodIdx);
-    var inputDis = !canEdit ? 'disabled' : '';
+    var totalProd = 0;
     h += '<tr>'
-      +'<td style="padding:8px 10px;border:1px solid var(--border);font-weight:600;color:'+CORES_OUTROS[prod]+';font-size:12px;">'+prod+'</td>'
-      +'<td style="padding:4px 6px;border:1px solid var(--border);">'
-        +'<input class="pOutroInput" data-mes="'+mesIdx+'" data-prod="'+prodIdx+'" '
-        +'type="text" value="'+(val?fmtMilhar(val):'')+'" placeholder="0" inputmode="numeric" '+inputDis+' '
-        +'style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:12px;text-align:center;background:var(--surface);'+(inputDis?'opacity:.6;cursor:not-allowed;':'')+';">'
-      +'</td>'
+      +'<td style="padding:6px;border:1px solid var(--border);font-weight:600;color:'+CORES_OUTROS[prod]+';font-size:11px;">'+prod+'</td>';
+    
+    for(var si = 1; si <= 4; si++){
+      var semVal = getProducaoOutroProduto(e.id, tri, mesIdx, si, prodIdx);
+      totalProd += semVal;
+      var inputDis = !canEdit ? 'disabled' : '';
+      h += '<td style="padding:3px;border:1px solid var(--border);">'
+        +'<input class="pOutroInput" data-mes="'+mesIdx+'" data-sem="'+si+'" data-prod="'+prodIdx+'" '
+        +'type="text" value="'+(semVal?fmtMilhar(semVal):'')+'" placeholder="0" inputmode="numeric" '+inputDis+' '
+        +'style="width:100%;padding:4px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:11px;text-align:center;background:var(--surface);'+(inputDis?'opacity:.6;cursor:not-allowed;':'')+';">'
+        +'</td>';
+    }
+    h += '<td class="pOutroTotalProd-'+mesIdx+'-'+prodIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--bg);font-weight:600;text-align:center;font-size:11px;">'+fmtMilhar(totalProd)+'</td>'
       +'</tr>';
   });
   
-  h += '</tbody></table></div></div>';
+  // Linha de totais por semana
+  h += '<tr style="background:var(--bg);font-weight:700;">'
+    +'<td style="padding:6px;border:1px solid var(--border);font-size:10px;text-transform:uppercase;color:var(--ink);letter-spacing:.04em;">Total</td>';
+  for(var siO = 1; siO <= 4; siO++){
+    var semTotO = getTotalSemanaOutros(e.id, tri, mesIdx, siO);
+    h += '<td class="pOutroTotalSem-'+mesIdx+'-'+siO+'" style="padding:6px;border:1px solid var(--border);text-align:center;font-size:11px;">'+fmtMilhar(semTotO)+'</td>';
+  }
+  h += '<td class="pOutroTotalMes-'+mesIdx+'" style="padding:6px;border:1px solid var(--border);background:var(--or-l);color:var(--or-d);text-align:center;font-size:12px;font-weight:700;">'+fmtMilhar(totalOutrosMes)+'</td>'
+    +'</tr>'
+    +'</tbody></table></div></div>';
   
   // Gráfico de pizza (todos os produtos)
   h += '<div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border);">'
@@ -2723,11 +2800,12 @@ function renderResultadosForTri(idx, tri){
     });
   });
   
-  // Listeners para Outros Produtos (atualiza total em tempo real)
+  // Listeners para Outros Produtos (atualiza totais em tempo real)
   document.querySelectorAll('.pOutroInput').forEach(function(inp){
     inp.addEventListener('input', function(){
       var v = this.value.replace(/[^0-9]/g,'');
       this.value = v ? parseInt(v).toLocaleString('pt-BR') : '';
+      atualizarTotaisOutrosProdutos(idx, tri);
     });
   });
   
@@ -2753,13 +2831,14 @@ function renderResultadosForTri(idx, tri){
         totalGeral += val;
       }
       
-      // Salvar Outros Produtos
+      // Salvar Outros Produtos (com semana)
       var outroInputs = document.querySelectorAll('.pOutroInput');
       for(var j = 0; j < outroInputs.length; j++){
         var outVal = parseMilhar(outroInputs[j].value) || 0;
         var outMes = parseInt(outroInputs[j].getAttribute('data-mes'));
+        var outSem = parseInt(outroInputs[j].getAttribute('data-sem'));
         var outProd = parseInt(outroInputs[j].getAttribute('data-prod'));
-        await saveProducaoOutroProduto(e.id, tri, outMes, outProd, outVal);
+        await saveProducaoOutroProduto(e.id, tri, outMes, outSem, outProd, outVal);
       }
       
       await saveProducaoTri(e.id, tri, totalGeral);
@@ -2834,6 +2913,52 @@ function atualizarTotaisModalidades(idx, tri){
   
   // Atualizar indicadores e gráfico em tempo real
   // Pizza será atualizada ao salvar
+}
+
+// Atualiza totais dos outros produtos (semanas, mês, produto) em tempo real
+function atualizarTotaisOutrosProdutos(idx, tri){
+  var mesIdx = pSelectedMesIdx || 1;
+  var numProdutos = OUTROS_PRODUTOS.length;
+  
+  // Coletar valores dos inputs
+  var valores = {}; // valores[semIdx][prodIdx] = valor
+  for(var si = 1; si <= 4; si++){
+    valores[si] = {};
+    for(var pi = 0; pi < numProdutos; pi++){
+      var inp = document.querySelector('.pOutroInput[data-mes="'+mesIdx+'"][data-sem="'+si+'"][data-prod="'+pi+'"]');
+      valores[si][pi] = inp ? (parseMilhar(inp.value)||0) : 0;
+    }
+  }
+  
+  // Total por produto no mês
+  for(var p = 0; p < numProdutos; p++){
+    var totalProd = 0;
+    for(var s = 1; s <= 4; s++){
+      totalProd += valores[s][p];
+    }
+    var elP = document.querySelector('.pOutroTotalProd-'+mesIdx+'-'+p);
+    if(elP) elP.textContent = fmtMilhar(totalProd);
+  }
+  
+  // Total por semana
+  for(var s2 = 1; s2 <= 4; s2++){
+    var totalSem = 0;
+    for(var p2 = 0; p2 < numProdutos; p2++){
+      totalSem += valores[s2][p2];
+    }
+    var elS = document.querySelector('.pOutroTotalSem-'+mesIdx+'-'+s2);
+    if(elS) elS.textContent = fmtMilhar(totalSem);
+  }
+  
+  // Total do mês
+  var totalMes = 0;
+  for(var s3 = 1; s3 <= 4; s3++){
+    for(var p3 = 0; p3 < numProdutos; p3++){
+      totalMes += valores[s3][p3];
+    }
+  }
+  var elM = document.querySelector('.pOutroTotalMes-'+mesIdx);
+  if(elM) elM.textContent = fmtMilhar(totalMes);
 }
 
 // Renderiza os 4 cards de indicadores por modalidade
@@ -4178,30 +4303,83 @@ document.getElementById('btnObs').addEventListener('click', function(){
   // Configurações — prazo de produção por data
   var cfgPrazoInput = document.getElementById('cfgPrazoData');
   if(cfgPrazoInput && S.cfg && S.cfg.prazo_producao) cfgPrazoInput.value = S.cfg.prazo_producao;
-  // Mostrar prazo atual
+  
+  // Renderiza o estado da UI (com prazo definido = mostra card, sem = mostra form)
   function renderPrazoAtual(){
-    var el = document.getElementById('cfgPrazoAtual');
-    if(!el) return;
+    var cardEl = document.getElementById('cfgPrazoCardAtual');
+    var formEl = document.getElementById('cfgPrazoForm');
+    var displayEl = document.getElementById('cfgPrazoDataDisplay');
+    var statusEl = document.getElementById('cfgPrazoStatus');
+    var btnFecharForm = document.getElementById('btnCfgFecharForm');
+    
     if(S.cfg && S.cfg.prazo_producao){
-      var d = new Date(S.cfg.prazo_producao+'T12:00:00');
-      var hoje = new Date();
-      var diff = Math.ceil((d - hoje) / 86400000);
-      var status = diff > 2 ? '🟢 Dentro do prazo' : (diff > 0 ? '🟡 Prazo próximo ('+diff+' dias)' : '🔴 Prazo vencido');
-      el.innerHTML = '📅 Prazo atual: <strong>'+fmtDate(S.cfg.prazo_producao)+'</strong> — '+status;
+      // Mostra o card e esconde o form
+      if(cardEl) cardEl.style.display = 'block';
+      if(formEl) formEl.style.display = 'none';
+      if(btnFecharForm) btnFecharForm.style.display = 'none';
+      
+      if(displayEl) displayEl.textContent = '📅 ' + fmtDate(S.cfg.prazo_producao);
+      
+      if(statusEl){
+        var d = new Date(S.cfg.prazo_producao+'T12:00:00');
+        var hoje = new Date();
+        var diff = Math.ceil((d - hoje) / 86400000);
+        var status, cor;
+        if(diff > 2){ status = '🟢 Dentro do prazo ('+diff+' dias restantes)'; cor = '#16A34A'; }
+        else if(diff > 0){ status = '🟡 Prazo próximo ('+diff+' '+(diff===1?'dia':'dias')+')'; cor = '#F59E0B'; }
+        else if(diff === 0){ status = '🟠 Vence hoje!'; cor = '#EA580C'; }
+        else { status = '🔴 Prazo vencido há '+Math.abs(diff)+' '+(Math.abs(diff)===1?'dia':'dias'); cor = '#DC2626'; }
+        statusEl.textContent = status;
+        statusEl.style.color = cor;
+      }
     } else {
-      el.innerHTML = 'Nenhum prazo definido ainda.';
+      // Sem prazo: mostra o form
+      if(cardEl) cardEl.style.display = 'none';
+      if(formEl) formEl.style.display = 'flex';
+      if(btnFecharForm) btnFecharForm.style.display = 'none';
     }
   }
   renderPrazoAtual();
+  
   var btnCfgPrazo = document.getElementById('btnCfgSalvarPrazo');
   if(btnCfgPrazo) btnCfgPrazo.addEventListener('click', async function(){
     var val = document.getElementById('cfgPrazoData').value;
     if(!val){ alert('Selecione uma data.'); return; }
     S.cfg.prazo_producao = val;
     S.cfg.prazo_definido_em = new Date().toISOString().slice(0,10);
-    await sb.from('configuracoes').upsert({id:'cfg_geral', valor:JSON.parse(JSON.stringify(S.cfg))});
+    await sb.from('configuracoes').upsert(JSON.parse(JSON.stringify({id:'cfg_geral', valor:S.cfg})));
     var sv = document.getElementById('cfgPrazoSaved');
     if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
+    renderPrazoAtual();
+    renderCards();
+  });
+  
+  // Botão "Alterar" - abre o form pré-preenchido
+  var btnAlterar = document.getElementById('btnCfgAlterarPrazo');
+  if(btnAlterar) btnAlterar.addEventListener('click', function(){
+    var cardEl = document.getElementById('cfgPrazoCardAtual');
+    var formEl = document.getElementById('cfgPrazoForm');
+    var btnFecharForm = document.getElementById('btnCfgFecharForm');
+    if(cardEl) cardEl.style.display = 'none';
+    if(formEl) formEl.style.display = 'flex';
+    if(btnFecharForm) btnFecharForm.style.display = 'inline-flex';
+    if(cfgPrazoInput && S.cfg && S.cfg.prazo_producao) cfgPrazoInput.value = S.cfg.prazo_producao;
+  });
+  
+  // Botão "Cancelar edição" - fecha o form sem salvar
+  var btnFechar = document.getElementById('btnCfgFecharForm');
+  if(btnFechar) btnFechar.addEventListener('click', function(){
+    renderPrazoAtual();
+  });
+  
+  // Botão "Cancelar prazo" - remove o prazo definido
+  var btnCancelar = document.getElementById('btnCfgCancelarPrazo');
+  if(btnCancelar) btnCancelar.addEventListener('click', async function(){
+    if(!confirm('Tem certeza que deseja cancelar o prazo atual? Os cards voltarão a mostrar status normal.')) return;
+    S.cfg.prazo_producao = null;
+    S.cfg.prazo_definido_em = null;
+    await sb.from('configuracoes').upsert(JSON.parse(JSON.stringify({id:'cfg_geral', valor:S.cfg})));
+    if(cfgPrazoInput) cfgPrazoInput.value = '';
     renderPrazoAtual();
     renderCards();
   });
