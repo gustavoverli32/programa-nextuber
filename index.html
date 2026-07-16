@@ -1412,7 +1412,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v17 - avaliação + prazo + outros semanal');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v18 - engajamento + contatos');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2343,8 +2343,10 @@ function renderAvaliacao(idx){
       +'<span style="font-size:12px;color:var(--ink2);">Nota final</span>'
       +'<span style="font-size:22px;font-weight:500;color:'+nc+';">'+nota+'<span style="font-size:13px;color:var(--ink3);">/10</span></span>'
     +'</div></div>'
-    +'<div id="pEvolucaoChart" style="margin-top:14px;"></div>';
+    +'<div id="pEvolucaoChart" style="margin-top:14px;"></div>'
+    +'<div id="pContatos" style="margin-top:14px;"></div>';
   loadEvolucaoChart(e.id);
+  renderContatosCard(idx);
 }
 
 async function loadEvolucaoChart(eid){
@@ -2410,6 +2412,250 @@ async function loadEvolucaoChart(eid){
     +'</div>';
 }
 
+// ═══════════════════════════════════════
+// ═══════════ CONTATOS ═══════════════════
+// ═══════════════════════════════════════
+
+// Semana selecionada globalmente (formato: 'YYYY-Www' — número ISO da semana)
+var contatosSelectedWeek = null;
+
+// Retorna o ano e número ISO da semana atual (formato "2026-W28")
+function getSemanaAtualISO(){
+  var hoje = new Date();
+  return getSemanaISO(hoje);
+}
+
+function getSemanaISO(date){
+  var d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  var dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+  return d.getUTCFullYear() + '-W' + String(weekNo).padStart(2, '0');
+}
+
+// Retorna array com as 5 datas úteis (seg-sex) da semana ISO
+function getDiasDaSemana(semISO){
+  var parts = semISO.split('-W');
+  var year = parseInt(parts[0]);
+  var week = parseInt(parts[1]);
+  // Segunda-feira da semana ISO
+  var simple = new Date(year, 0, 1 + (week - 1) * 7);
+  var dow = simple.getDay();
+  var monday;
+  if(dow <= 4){
+    monday = new Date(simple.setDate(simple.getDate() - simple.getDay() + 1));
+  } else {
+    monday = new Date(simple.setDate(simple.getDate() + 8 - simple.getDay()));
+  }
+  var dias = [];
+  for(var i = 0; i < 5; i++){
+    var d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dias.push(d);
+  }
+  return dias;
+}
+
+function formatarDiaCurto(d){
+  var nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+  return nomes[d.getDay()] + ' ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function getContatoDia(eid, semISO, diaIdx){
+  // Salva usando tri_ref: "CONTATO-2026-W28-D0" a D4
+  var ref = 'CONTATO-' + semISO + '-D' + diaIdx;
+  if(!S.producao) return 0;
+  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+  return row ? (parseFloat(row.producao) || 0) : 0;
+}
+
+async function saveContatoDia(eid, semISO, diaIdx, valor){
+  var ref = 'CONTATO-' + semISO + '-D' + diaIdx;
+  var r = await sb.from('producao_trimestral').upsert(JSON.parse(JSON.stringify({
+    estagiario_id: eid,
+    tri_ref: ref,
+    meta: 0,
+    producao: valor
+  })), {onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+    if(i >= 0) S.producao[i] = r.data;
+    else S.producao.push(r.data);
+  }
+}
+
+function getMetaContatos(eid){
+  var ref = 'CONTATO-META';
+  if(!S.producao) return 0;
+  var row = S.producao.find(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+  return row ? (parseFloat(row.meta) || 0) : 0;
+}
+
+async function saveMetaContatos(eid, meta){
+  var ref = 'CONTATO-META';
+  var r = await sb.from('producao_trimestral').upsert(JSON.parse(JSON.stringify({
+    estagiario_id: eid,
+    tri_ref: ref,
+    meta: meta,
+    producao: 0
+  })), {onConflict:'estagiario_id,tri_ref'}).select().single();
+  if(!r.error && r.data){
+    var i = S.producao.findIndex(function(p){ return p.estagiario_id === eid && p.tri_ref === ref; });
+    if(i >= 0) S.producao[i] = r.data;
+    else S.producao.push(r.data);
+  }
+}
+
+// Naviga entre semanas (delta = -1 para anterior, +1 para próxima)
+function moverSemana(semISO, delta){
+  var dias = getDiasDaSemana(semISO);
+  var seg = dias[0];
+  seg.setDate(seg.getDate() + delta * 7);
+  return getSemanaISO(seg);
+}
+
+function labelSemana(semISO){
+  var dias = getDiasDaSemana(semISO);
+  var d1 = dias[0], d5 = dias[4];
+  return String(d1.getDate()).padStart(2,'0')+'/'+String(d1.getMonth()+1).padStart(2,'0')
+    +' – '+String(d5.getDate()).padStart(2,'0')+'/'+String(d5.getMonth()+1).padStart(2,'0');
+}
+
+function renderContatosCard(idx){
+  var el = document.getElementById('pContatos');
+  if(!el) return;
+  var e = S.ests[idx];
+  
+  // Inicializar semana selecionada se necessário
+  if(!contatosSelectedWeek) contatosSelectedWeek = getSemanaAtualISO();
+  var semanaAtualReal = getSemanaAtualISO();
+  var isSemanaAtual = (contatosSelectedWeek === semanaAtualReal);
+  
+  var canEdit = (editor || (modoGestor && gestorLogado));
+  var meta = getMetaContatos(e.id);
+  var metaSemanal = meta * 5; // meta diária × 5 dias
+  
+  var dias = getDiasDaSemana(contatosSelectedWeek);
+  var totalSemana = 0;
+  for(var d = 0; d < 5; d++){
+    totalSemana += getContatoDia(e.id, contatosSelectedWeek, d);
+  }
+  var pctSemana = metaSemanal > 0 ? Math.min(Math.round(totalSemana/metaSemanal*100), 100) : 0;
+  var corProgresso = pctSemana >= 80 ? '#16A34A' : (pctSemana >= 50 ? '#F59E0B' : '#DC2626');
+  
+  var h = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;">'
+    // Cabeçalho
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">'
+      +'<div style="display:flex;align-items:center;gap:6px;">'
+        +'<span style="font-size:16px;">📞</span>'
+        +'<span style="font-size:14px;font-weight:600;color:var(--ink);">Contatos</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;">'
+        +'<button class="btnContSemAnt" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:11px;color:var(--or);">←</button>'
+        +'<div style="text-align:center;min-width:110px;">'
+          +'<div style="font-size:11px;font-weight:600;color:var(--ink);">'+labelSemana(contatosSelectedWeek)+'</div>'
+          +'<div style="font-size:9px;color:'+(isSemanaAtual?'var(--or)':'var(--ink3)')+';font-weight:'+(isSemanaAtual?'600':'400')+';">'+(isSemanaAtual?'● Semana atual':'Semana anterior')+'</div>'
+        +'</div>'
+        +'<button class="btnContSemProx" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:11px;color:var(--or);" '+(isSemanaAtual?'disabled':'')+'>→</button>'
+      +'</div>'
+    +'</div>'
+    // Meta diária
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px;background:var(--bg);border-radius:8px;">'
+      +'<div style="display:flex;flex-direction:column;">'
+        +'<span style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Meta diária</span>'
+        +(canEdit 
+          ? '<input class="fieldContMeta" type="text" value="'+(meta||'')+'" placeholder="0" inputmode="numeric" style="margin-top:4px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);width:80px;background:var(--surface);">' 
+          : '<span style="margin-top:4px;font-size:13px;font-weight:600;color:var(--ink);">'+(meta||'—')+'</span>')
+      +'</div>'
+      +'<div style="text-align:right;">'
+        +'<span style="font-size:10px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Meta semanal</span>'
+        +'<div style="margin-top:4px;font-size:13px;font-weight:600;color:var(--ink2);">'+(metaSemanal||'—')+'</div>'
+      +'</div>'
+    +'</div>'
+    // Barra de progresso
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">'
+      +'<span style="font-size:11px;color:var(--ink2);">Total da semana</span>'
+      +'<span style="font-size:12px;font-weight:600;color:'+corProgresso+';">'+totalSemana+(metaSemanal>0?' / '+metaSemanal+' ('+pctSemana+'%)':'')+'</span>'
+    +'</div>'
+    +'<div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:14px;"><div style="width:'+pctSemana+'%;height:100%;background:'+corProgresso+';"></div></div>'
+    // Grade dos 5 dias
+    +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">';
+  
+  for(var i = 0; i < 5; i++){
+    var val = getContatoDia(e.id, contatosSelectedWeek, i);
+    var atingiu = meta > 0 && val >= meta;
+    var borderCor = atingiu ? '#16A34A' : 'var(--border)';
+    var bgCor = atingiu ? '#DCFCE7' : 'var(--surface)';
+    var inputDis = !canEdit ? 'disabled' : '';
+    
+    h += '<div style="border:1px solid '+borderCor+';border-radius:6px;padding:6px;background:'+bgCor+';">'
+      +'<div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;font-weight:600;text-align:center;margin-bottom:4px;">'+formatarDiaCurto(dias[i])+'</div>'
+      +'<input class="fieldContDia" data-dia="'+i+'" type="text" value="'+(val||'')+'" placeholder="0" inputmode="numeric" '+inputDis+' '
+      +'style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-family:inherit;font-size:13px;font-weight:600;text-align:center;color:'+(atingiu?'#16A34A':'var(--ink)')+';background:var(--surface);'+(inputDis?'opacity:.6;cursor:not-allowed;':'')+'">'
+      +'</div>';
+  }
+  
+  h += '</div>';
+  
+  // Botão salvar
+  if(canEdit){
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:12px;">'
+      +'<button class="btn-obs" id="btnSalvarContatos" style="font-size:12px;padding:6px 14px;">Salvar</button>'
+      +'<span class="obs-saved" id="contatosSaved">✓ Salvo</span>'
+      +'</div>';
+  }
+  
+  h += '</div>';
+  
+  el.innerHTML = h;
+  
+  // Listeners de navegação
+  var btnAnt = el.querySelector('.btnContSemAnt');
+  if(btnAnt) btnAnt.addEventListener('click', function(){
+    contatosSelectedWeek = moverSemana(contatosSelectedWeek, -1);
+    renderContatosCard(idx);
+  });
+  var btnProx = el.querySelector('.btnContSemProx');
+  if(btnProx){
+    btnProx.style.opacity = isSemanaAtual ? '0.5' : '1';
+    btnProx.addEventListener('click', function(){
+      if(isSemanaAtual) return;
+      contatosSelectedWeek = moverSemana(contatosSelectedWeek, 1);
+      renderContatosCard(idx);
+    });
+  }
+  
+  // Listeners de input (só números)
+  el.querySelectorAll('.fieldContDia').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);
+    });
+  });
+  var mIn = el.querySelector('.fieldContMeta');
+  if(mIn) mIn.addEventListener('input', function(){
+    this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);
+  });
+  
+  // Salvar
+  var btnSv = document.getElementById('btnSalvarContatos');
+  if(btnSv) btnSv.addEventListener('click', async function(){
+    // Salvar meta
+    var novaMeta = parseInt((el.querySelector('.fieldContMeta')||{}).value) || 0;
+    await saveMetaContatos(e.id, novaMeta);
+    // Salvar dias
+    var inputs = el.querySelectorAll('.fieldContDia');
+    for(var i = 0; i < inputs.length; i++){
+      var val = parseInt(inputs[i].value) || 0;
+      var diaIdx = parseInt(inputs[i].getAttribute('data-dia'));
+      await saveContatoDia(e.id, contatosSelectedWeek, diaIdx, val);
+    }
+    var sv = document.getElementById('contatosSaved');
+    if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
+    renderContatosCard(idx);
+  });
+}
+
 // ── MODALIDADES ──
 var MODALIDADES = ['INSS', 'OP', 'EP', 'Creditário'];
 var CORES_MODALIDADES = {
@@ -2420,12 +2666,13 @@ var CORES_MODALIDADES = {
 };
 
 // ── OUTROS PRODUTOS ──
-var OUTROS_PRODUTOS = ['Seguros', 'PIC', 'Combinaqui', 'Consórcios'];
+var OUTROS_PRODUTOS = ['Seguros', 'PIC', 'Combinaqui', 'Consórcios', 'Engajamento'];
 var CORES_OUTROS = {
   'Seguros': '#8B5CF6',
   'PIC': '#06B6D4',
   'Combinaqui': '#F97316',
-  'Consórcios': '#10B981'
+  'Consórcios': '#10B981',
+  'Engajamento': '#EC4899'
 };
 
 function getProducaoOutroProduto(eid, tri, mesIdx, semanaIdx, prodIdx){
