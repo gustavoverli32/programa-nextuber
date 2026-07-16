@@ -674,7 +674,31 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
     <!-- Ranking (tutora apenas) -->
     <div class="card" id="cardRanking" style="display:none;margin-bottom:16px;">
-      <div class="card-ttl">Ranking do trimestre</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="card-ttl" style="margin:0;">Ranking do trimestre</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <select id="filtroRanking" style="font-size:12px;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;background:var(--surface);color:var(--ink);cursor:pointer;">
+            <optgroup label="Geral">
+              <option value="nota">🏆 Nota (Crédito + Produtos)</option>
+              <option value="credito">💳 Crédito total (INSS+OP+EP+Creditário)</option>
+              <option value="produtos">📦 Produtos total (Seg+PIC+Comb+Cons+Eng)</option>
+            </optgroup>
+            <optgroup label="Crédito (por modalidade)">
+              <option value="cred_INSS">🔵 INSS</option>
+              <option value="cred_OP">🟠 OP</option>
+              <option value="cred_EP">🩷 EP</option>
+              <option value="cred_Crediario">🟢 Creditário</option>
+            </optgroup>
+            <optgroup label="Produtos (por tipo)">
+              <option value="out_Seguros">🟣 Seguros</option>
+              <option value="out_PIC">🔵 PIC</option>
+              <option value="out_Combinaqui">🟠 Combinaqui</option>
+              <option value="out_Consorcios">🟢 Consórcios</option>
+              <option value="out_Engajamento">🩷 Engajamento</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
       <div id="rankingList"></div>
     </div>
   </section>
@@ -1451,7 +1475,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v21 - filtros acompanhamento');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v22 - filtros ranking');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2280,21 +2304,58 @@ function renderRanking(){
   var el = document.getElementById('rankingList');
   if(!el) return;
   var tri = trimestreRef();
+  var filtro = (document.getElementById('filtroRanking')||{}).value || 'nota';
+  
   var lista = S.ests.filter(function(e){ return e.perfil && e.perfil.funcional && e.perfil.inicio; });
-  var ranked = lista.map(function(e){ return {e:e, score:calcScore(e, tri)}; })
-                    .sort(function(a,b){ return b.score - a.score; });
+  
+  // Mapear filtro para função de valor + config visual
+  var configFiltros = {
+    nota: {label: 'Nota final', unidade: '/10', getValor: function(e){ return calcScore(e, tri); }, isNota: true},
+    credito: {label: 'Crédito total', unidade: '', getValor: function(e){ return getTotalTrimestreModalidades(e.id, tri); }},
+    produtos: {label: 'Produtos total', unidade: '', getValor: function(e){ return getTotalTrimestreOutros(e.id, tri); }},
+    cred_INSS: {label: 'INSS', unidade: '', getValor: function(e){ return getTotalTrimestreModalidade(e.id, tri, 0); }, cor: '#2196F3'},
+    cred_OP: {label: 'OP', unidade: '', getValor: function(e){ return getTotalTrimestreModalidade(e.id, tri, 1); }, cor: '#FF9800'},
+    cred_EP: {label: 'EP', unidade: '', getValor: function(e){ return getTotalTrimestreModalidade(e.id, tri, 2); }, cor: '#E91E63'},
+    cred_Crediario: {label: 'Creditário', unidade: '', getValor: function(e){ return getTotalTrimestreModalidade(e.id, tri, 3); }, cor: '#009688'},
+    out_Seguros: {label: 'Seguros', unidade: '', getValor: function(e){ return getTotalTrimestreOutroProduto(e.id, tri, 0); }, cor: '#8B5CF6'},
+    out_PIC: {label: 'PIC', unidade: '', getValor: function(e){ return getTotalTrimestreOutroProduto(e.id, tri, 1); }, cor: '#06B6D4'},
+    out_Combinaqui: {label: 'Combinaqui', unidade: '', getValor: function(e){ return getTotalTrimestreOutroProduto(e.id, tri, 2); }, cor: '#F97316'},
+    out_Consorcios: {label: 'Consórcios', unidade: '', getValor: function(e){ return getTotalTrimestreOutroProduto(e.id, tri, 3); }, cor: '#10B981'},
+    out_Engajamento: {label: 'Engajamento', unidade: '', getValor: function(e){ return getTotalTrimestreOutroProduto(e.id, tri, 4); }, cor: '#EC4899'}
+  };
+  
+  var config = configFiltros[filtro] || configFiltros.nota;
+  
+  var ranked = lista.map(function(e){ return {e:e, valor: config.getValor(e)}; })
+                    .filter(function(r){ return r.valor > 0; }) // esconde quem não vendeu nada
+                    .sort(function(a,b){ return b.valor - a.valor; });
+  
   if(!ranked.length){
-    el.innerHTML = '<div style="font-size:13px;color:var(--ink3);font-style:italic;">Nenhum estagiário com perfil completo.</div>';
+    el.innerHTML = '<div style="font-size:13px;color:var(--ink3);font-style:italic;">Nenhum estagiário com resultados de '+config.label+' neste trimestre.</div>';
     return;
   }
+  
+  // Valor máximo para calcular barra de progresso proporcional
+  var valorMax = ranked[0].valor;
+  
   el.innerHTML = ranked.map(function(r,i){
-    var cor = i===0?'var(--or)':i===1?'var(--ink2)':'var(--ink3)';
-    var pct = Math.round(r.score*10);
+    var corPos = i===0?'var(--or)':i===1?'var(--ink2)':'var(--ink3)';
+    var corBarra = config.cor || corPos;
+    
+    var valorDisplay, pct;
+    if(config.isNota){
+      valorDisplay = r.valor + config.unidade;
+      pct = Math.round(r.valor * 10); // 0-10 → 0-100%
+    } else {
+      valorDisplay = fmtMilhar(r.valor);
+      pct = valorMax > 0 ? Math.round((r.valor / valorMax) * 100) : 0;
+    }
+    
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">'
-      +'<div style="width:22px;height:22px;border-radius:50%;background:'+(i<2?cor:'var(--bg)')+';color:'+(i<2?'#fff':'var(--ink3)')+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">'+(i+1)+'</div>'
-      +'<div style="font-size:13px;font-weight:500;flex:1;">'+r.e.nome+'</div>'
-      +'<div style="width:80px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+cor+';"></div></div>'
-      +'<div style="font-size:13px;font-weight:600;color:'+cor+';min-width:36px;text-align:right;">'+r.score+'/10</div>'
+      +'<div style="width:22px;height:22px;border-radius:50%;background:'+(i<2?corPos:'var(--bg)')+';color:'+(i<2?'#fff':'var(--ink3)')+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">'+(i+1)+'</div>'
+      +'<div style="font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.e.nome+'</div>'
+      +'<div style="width:80px;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;flex-shrink:0;"><div style="width:'+pct+'%;height:100%;background:'+corBarra+';"></div></div>'
+      +'<div style="font-size:13px;font-weight:600;color:'+corBarra+';min-width:60px;text-align:right;flex-shrink:0;">'+valorDisplay+'</div>'
     +'</div>';
   }).join('');
 }
@@ -5015,6 +5076,10 @@ document.getElementById('btnObs').addEventListener('click', function(){
 
   // Export Excel
   document.getElementById('btnExportExcel').addEventListener('click', openExportModal);
+  
+  // Listener do filtro de ranking
+  var fRank = document.getElementById('filtroRanking');
+  if(fRank) fRank.addEventListener('change', function(){ renderRanking(); });
   
   // ═══ Listeners dos filtros de acompanhamento ═══
   ['filtroAgencia','filtroCertificacao','filtroOrdem'].forEach(function(id){
