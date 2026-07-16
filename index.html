@@ -698,6 +698,45 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
           <span style="font-size:16px;">📊</span> Exportar Excel
         </button>
       </div>
+      
+      <!-- Barra de filtros -->
+      <div id="filtrosBar" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:6px;color:var(--ink3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">
+          <span style="font-size:14px;">🔍</span> Filtros
+        </div>
+        
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:12px;color:var(--ink2);">Agência:</label>
+          <select id="filtroAgencia" style="font-size:12.5px;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;background:var(--surface);color:var(--ink);cursor:pointer;">
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+        
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:12px;color:var(--ink2);">Certificação:</label>
+          <select id="filtroCertificacao" style="font-size:12.5px;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;background:var(--surface);color:var(--ink);cursor:pointer;">
+            <option value="todas">Todas</option>
+            <option value="sem">Sem certificação</option>
+            <option value="CPA">CPA</option>
+            <option value="C-PRO R">C-PRO R</option>
+            <option value="C-PRO I">C-PRO I</option>
+          </select>
+        </div>
+        
+        <div style="display:flex;align-items:center;gap:6px;">
+          <label style="font-size:12px;color:var(--ink2);">Ordenar por:</label>
+          <select id="filtroOrdem" style="font-size:12.5px;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;background:var(--surface);color:var(--ink);cursor:pointer;">
+            <option value="nome">Nome (A-Z)</option>
+            <option value="maior_nota">Maior nota</option>
+            <option value="menor_nota">Menor nota</option>
+          </select>
+        </div>
+        
+        <button id="btnLimparFiltros" style="font-size:12px;padding:5px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--ink2);cursor:pointer;font-weight:500;">Limpar</button>
+        
+        <div id="filtroContador" style="margin-left:auto;font-size:12px;color:var(--ink3);font-weight:500;"></div>
+      </div>
+      
       <div id="notionGrid"></div>
     </div>
 
@@ -1412,7 +1451,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v20 - excel completo');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v21 - filtros acompanhamento');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -3520,11 +3559,39 @@ function renderPanelTrilha(idx){
 }
 
 
+// Preenche o dropdown de agências dinamicamente com os valores existentes
+function atualizarOpcoesFiltroAgencia(lista){
+  var sel = document.getElementById('filtroAgencia');
+  if(!sel) return;
+  var valorAtual = sel.value || 'todas';
+  
+  // Coletar agências únicas
+  var agencias = {};
+  lista.forEach(function(e){
+    if(e.perfil && e.perfil.agencia){ agencias[e.perfil.agencia] = true; }
+  });
+  var listaAg = Object.keys(agencias).sort();
+  
+  // Reconstruir opções
+  var h = '<option value="todas">Todas</option>';
+  listaAg.forEach(function(ag){
+    h += '<option value="'+ag+'">Ag '+ag+'</option>';
+  });
+  sel.innerHTML = h;
+  
+  // Restaurar valor selecionado (se ainda válido)
+  if(valorAtual === 'todas' || agencias[valorAtual]){
+    sel.value = valorAtual;
+  } else {
+    sel.value = 'todas';
+  }
+}
+
 function renderCards(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios){
+    if(!p.todos_estagiarios && !isGGA()){
       lista = S.ests.filter(function(e){
         return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
       });
@@ -3534,6 +3601,55 @@ function renderCards(){
       return;
     }
   }
+  
+  // Preencher opções de agência (dinâmico)
+  atualizarOpcoesFiltroAgencia(lista);
+  
+  // Aplicar filtros
+  var filtroAg = (document.getElementById('filtroAgencia')||{}).value || 'todas';
+  var filtroCert = (document.getElementById('filtroCertificacao')||{}).value || 'todas';
+  var filtroOrdem = (document.getElementById('filtroOrdem')||{}).value || 'nome';
+  
+  var totalAntes = lista.length;
+  
+  // Filtro agência
+  if(filtroAg !== 'todas'){
+    lista = lista.filter(function(e){ return (e.perfil && e.perfil.agencia) === filtroAg; });
+  }
+  
+  // Filtro certificação
+  if(filtroCert !== 'todas'){
+    if(filtroCert === 'sem'){
+      lista = lista.filter(function(e){ return !(e.perfil && e.perfil.certificacao); });
+    } else {
+      lista = lista.filter(function(e){ return (e.perfil && e.perfil.certificacao) === filtroCert; });
+    }
+  }
+  
+  // Ordenação
+  if(filtroOrdem === 'nome'){
+    lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||'', 'pt-BR'); });
+  } else if(filtroOrdem === 'maior_nota'){
+    lista.sort(function(a,b){ return calcScore(b) - calcScore(a); });
+  } else if(filtroOrdem === 'menor_nota'){
+    lista.sort(function(a,b){ return calcScore(a) - calcScore(b); });
+  }
+  
+  // Contador
+  var contEl = document.getElementById('filtroContador');
+  if(contEl){
+    if(lista.length === totalAntes){
+      contEl.textContent = totalAntes + ' estagiário' + (totalAntes!==1?'s':'');
+    } else {
+      contEl.textContent = 'Mostrando ' + lista.length + ' de ' + totalAntes;
+    }
+  }
+  
+  if(!lista.length){
+    document.getElementById('notionGrid').innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:14px;">Nenhum estagiário encontrado com esses filtros.</div>';
+    return;
+  }
+  
   var cards=lista.map(function(e,ei){
     var ci=currMonth(e);
     var done=e.meses.filter(function(s){return s.indexOf('Concluído')>=0||s.indexOf('Renovado')>=0;}).length;
@@ -4899,6 +5015,19 @@ document.getElementById('btnObs').addEventListener('click', function(){
 
   // Export Excel
   document.getElementById('btnExportExcel').addEventListener('click', openExportModal);
+  
+  // ═══ Listeners dos filtros de acompanhamento ═══
+  ['filtroAgencia','filtroCertificacao','filtroOrdem'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('change', function(){ renderCards(); });
+  });
+  var btnLimpar = document.getElementById('btnLimparFiltros');
+  if(btnLimpar) btnLimpar.addEventListener('click', function(){
+    var fa = document.getElementById('filtroAgencia'); if(fa) fa.value = 'todas';
+    var fc = document.getElementById('filtroCertificacao'); if(fc) fc.value = 'todas';
+    var fo = document.getElementById('filtroOrdem'); if(fo) fo.value = 'nome';
+    renderCards();
+  });
   document.getElementById('btnCancelExport').addEventListener('click', closeExportModal);
   document.getElementById('btnConfirmExport').addEventListener('click', exportToExcel);
   document.getElementById('exportOv').addEventListener('click', function(ev){ if(ev.target === this) closeExportModal(); });
