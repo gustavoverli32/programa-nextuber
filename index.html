@@ -1412,7 +1412,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v18 - engajamento + contatos');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v20 - excel completo');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -2264,23 +2264,36 @@ async function salvarSnapshot(eid, tri){
   tri = tri || trimestreRef();
   var e = S.ests.find(function(x){ return x.id === eid; });
   if(!e) return;
-  var pct = calcPctChecks(e);
+  
   var prod = getProducaoTri(eid, tri);
-  var meta = parseFloat(prod.meta)||0;
-  var totalMes = getTotalMensal(eid, tri);
-  var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
-  var pctR = meta>0 ? Math.min(producao/meta, 1) : 0;
-  var st = Math.round((pct/100)*4*10)/10;
-  var sr = Math.round(pctR*6*10)/10;
-  await sb.from('snapshots').upsert({
+  var meta = parseFloat(prod.meta) || 0;
+  
+  // Crédito (60% da nota)
+  var producaoCredito = getTotalTrimestreModalidades(eid, tri);
+  if(producaoCredito === 0){
+    var totalMes = getTotalMensal(eid, tri);
+    producaoCredito = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
+  }
+  var pctCredito = meta>0 ? Math.min(producaoCredito/meta, 1) : 0;
+  var scoreCredito = Math.round(pctCredito * 6 * 10) / 10;
+  
+  // Produtos (40% da nota)
+  var metaProdutos = meta * 0.2;
+  var producaoProdutos = getTotalTrimestreOutros(eid, tri);
+  var pctProdutos = metaProdutos>0 ? Math.min(producaoProdutos/metaProdutos, 1) : 0;
+  var scoreProdutos = Math.round(pctProdutos * 4 * 10) / 10;
+  
+  var scoreFinal = Math.min(Math.round((scoreCredito + scoreProdutos) * 10) / 10, 10);
+  
+  await sb.from('snapshots').upsert(JSON.parse(JSON.stringify({
     estagiario_id: eid,
     tri_ref: tri,
-    score: Math.min(Math.round((st+sr)*10)/10, 10),
-    score_producao: sr,
-    score_trilha: st,
-    total_producao: producao,
+    score: scoreFinal,
+    score_producao: scoreCredito,     // reaproveita coluna: agora é crédito
+    score_trilha: scoreProdutos,       // reaproveita coluna: agora é produtos
+    total_producao: producaoCredito + producaoProdutos,
     meta: meta
-  }, {onConflict:'estagiario_id,tri_ref'});
+  })), {onConflict:'estagiario_id,tri_ref'});
 }
 
 async function loadSnapshotsHistory(eid){
@@ -4202,6 +4215,15 @@ function closeExportModal(){
 
 function exportToExcel(){
   if(typeof XLSX === 'undefined'){ alert('Erro: biblioteca de exportação não carregou. Recarregue a página e tente novamente.'); return; }
+  // Carregar agendamentos ANTES de exportar (para incluir na aba)
+  if(typeof carregarAgendamentos === 'function'){
+    carregarAgendamentos().then(function(){ exportToExcelSync(); });
+  } else {
+    exportToExcelSync();
+  }
+}
+
+function exportToExcelSync(){
   var container = document.getElementById('exportTriCheckboxes');
   var checkedTris = [];
   container.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb){
@@ -4213,7 +4235,7 @@ function exportToExcel(){
   var lista = S.ests;
   if(modoGestor && gestorLogado){
     var p = gestorLogado.permissoes || {};
-    if(!p.todos_estagiarios){
+    if(!p.todos_estagiarios && !isGGA()){
       lista = S.ests.filter(function(e){
         return e.perfil && (e.perfil.ga_funcional === gestorLogado.funcional || e.perfil.gga_funcional === gestorLogado.funcional);
       });
@@ -4222,52 +4244,220 @@ function exportToExcel(){
 
   if(!lista.length){ alert('Nenhum estagiário para exportar.'); return; }
 
-  // Montar cabeçalho
-  var header = ['Nome', 'Funcional', 'Tempo no programa', 'Trilha'];
+  var wb = XLSX.utils.book_new();
+  
+  // ═══════════════════════════════════════════════════════════
+  // ABA 1: RESUMO GERAL (dados cadastrais + nota + totais)
+  // ═══════════════════════════════════════════════════════════
+  var headerResumo = ['Nome','Funcional','Agência','Data início','Tempo no programa','Trilha','Certificação','Meta contatos/dia'];
   checkedTris.forEach(function(tri){
     var label = fmtTrimestre(tri);
-    header.push('Meta ('+label+')', 'Produção ('+label+')', '% Atingido ('+label+')');
+    headerResumo.push(
+      'Meta '+label,
+      'Crédito '+label,
+      '% Crédito '+label,
+      'Produtos '+label,
+      '% Produtos '+label,
+      'Produção total '+label,
+      'Nota '+label
+    );
   });
-
-  // Montar dados
-  var rows = lista.map(function(e){
+  
+  var rowsResumo = lista.map(function(e){
     var trilhaKey = getEffectiveTrilhaKey(e);
     var trilhaNome = trilhaKey ? {iniciante:'Decolar',intermediario:'Evoluir',avancado:'Impactar'}[trilhaKey] : '—';
     var tempo = (e.perfil && e.perfil.inicio) ? calcTempo(e.perfil.inicio) : '—';
     var row = [
       e.nome || '—',
       (e.perfil && e.perfil.funcional) || '—',
+      (e.perfil && e.perfil.agencia) || '—',
+      (e.perfil && e.perfil.inicio) ? fmtDate(e.perfil.inicio) : '—',
       tempo,
-      trilhaNome
+      trilhaNome,
+      (e.perfil && e.perfil.certificacao) || '—',
+      getMetaContatos(e.id) || 0
     ];
     checkedTris.forEach(function(tri){
       var prod = getProducaoTri(e.id, tri);
       var meta = parseFloat(prod.meta)||0;
-      var totalMes = getTotalMensal(e.id, tri);
-      var producao = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
-      var pct = meta > 0 ? Math.round((producao/meta)*100) : 0;
-      row.push(meta, producao, pct + '%');
+      
+      // Crédito
+      var producaoCredito = getTotalTrimestreModalidades(e.id, tri);
+      if(producaoCredito === 0){
+        var totalMes = getTotalMensal(e.id, tri);
+        producaoCredito = totalMes > 0 ? totalMes : (parseFloat(prod.producao)||0);
+      }
+      var pctCredito = meta>0 ? Math.round(Math.min(producaoCredito/meta, 1)*100) : 0;
+      
+      // Produtos
+      var metaProdutos = meta * 0.2;
+      var producaoProdutos = getTotalTrimestreOutros(e.id, tri);
+      var pctProdutos = metaProdutos>0 ? Math.round(Math.min(producaoProdutos/metaProdutos, 1)*100) : 0;
+      
+      var nota = calcScore(e, tri);
+      var totalGeral = producaoCredito + producaoProdutos;
+      
+      row.push(meta, producaoCredito, pctCredito+'%', producaoProdutos, pctProdutos+'%', totalGeral, nota);
     });
     return row;
   });
-
-  // Criar workbook
-  var wb = XLSX.utils.book_new();
-  var wsData = [header].concat(rows);
-  var ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Larguras das colunas
-  var colWidths = [{wch:25},{wch:12},{wch:18},{wch:16}];
+  
+  var wsResumo = XLSX.utils.aoa_to_sheet([headerResumo].concat(rowsResumo));
+  var colsResumo = [{wch:25},{wch:12},{wch:10},{wch:12},{wch:18},{wch:14},{wch:12},{wch:14}];
   checkedTris.forEach(function(){
-    colWidths.push({wch:16},{wch:16},{wch:14});
+    colsResumo.push({wch:14},{wch:14},{wch:12},{wch:14},{wch:12},{wch:16},{wch:10});
   });
-  ws['!cols'] = colWidths;
-
-  var sheetName = editor ? 'Todos os Estagiários' : 'Meus Estagiários';
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
+  wsResumo['!cols'] = colsResumo;
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo Geral');
+  
+  // ═══════════════════════════════════════════════════════════
+  // ABA 2: CRÉDITO DETALHADO (INSS, OP, EP, Creditário por semana)
+  // ═══════════════════════════════════════════════════════════
+  var headerCredito = ['Nome','Funcional','Agência','Trimestre','Mês','Modalidade','Sem 1','Sem 2','Sem 3','Sem 4','Total mês'];
+  var rowsCredito = [];
+  lista.forEach(function(e){
+    checkedTris.forEach(function(tri){
+      var meses = getMesesTrimestre(tri);
+      for(var mi = 1; mi <= 3; mi++){
+        MODALIDADES.forEach(function(mod, modIdx){
+          var s1 = getProducaoSemanalModalidade(e.id, tri, mi, 1, modIdx);
+          var s2 = getProducaoSemanalModalidade(e.id, tri, mi, 2, modIdx);
+          var s3 = getProducaoSemanalModalidade(e.id, tri, mi, 3, modIdx);
+          var s4 = getProducaoSemanalModalidade(e.id, tri, mi, 4, modIdx);
+          var tot = s1+s2+s3+s4;
+          if(tot > 0){ // só inclui linhas com valores
+            rowsCredito.push([
+              e.nome, (e.perfil&&e.perfil.funcional)||'—', (e.perfil&&e.perfil.agencia)||'—',
+              fmtTrimestre(tri), meses[mi-1].nome, mod, s1, s2, s3, s4, tot
+            ]);
+          }
+        });
+      }
+    });
+  });
+  if(rowsCredito.length === 0){
+    rowsCredito.push(['Sem dados de crédito no período selecionado','','','','','','','','','','']);
+  }
+  var wsCredito = XLSX.utils.aoa_to_sheet([headerCredito].concat(rowsCredito));
+  wsCredito['!cols'] = [{wch:25},{wch:12},{wch:10},{wch:10},{wch:8},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsCredito, 'Crédito Detalhado');
+  
+  // ═══════════════════════════════════════════════════════════
+  // ABA 3: OUTROS PRODUTOS DETALHADO (Seguros, PIC, etc por semana)
+  // ═══════════════════════════════════════════════════════════
+  var headerProd = ['Nome','Funcional','Agência','Trimestre','Mês','Produto','Sem 1','Sem 2','Sem 3','Sem 4','Total mês'];
+  var rowsProd = [];
+  lista.forEach(function(e){
+    checkedTris.forEach(function(tri){
+      var meses = getMesesTrimestre(tri);
+      for(var mi = 1; mi <= 3; mi++){
+        OUTROS_PRODUTOS.forEach(function(prod, prodIdx){
+          var s1 = getProducaoOutroProduto(e.id, tri, mi, 1, prodIdx);
+          var s2 = getProducaoOutroProduto(e.id, tri, mi, 2, prodIdx);
+          var s3 = getProducaoOutroProduto(e.id, tri, mi, 3, prodIdx);
+          var s4 = getProducaoOutroProduto(e.id, tri, mi, 4, prodIdx);
+          var tot = s1+s2+s3+s4;
+          if(tot > 0){
+            rowsProd.push([
+              e.nome, (e.perfil&&e.perfil.funcional)||'—', (e.perfil&&e.perfil.agencia)||'—',
+              fmtTrimestre(tri), meses[mi-1].nome, prod, s1, s2, s3, s4, tot
+            ]);
+          }
+        });
+      }
+    });
+  });
+  if(rowsProd.length === 0){
+    rowsProd.push(['Sem dados de outros produtos no período selecionado','','','','','','','','','','']);
+  }
+  var wsProd = XLSX.utils.aoa_to_sheet([headerProd].concat(rowsProd));
+  wsProd['!cols'] = [{wch:25},{wch:12},{wch:10},{wch:10},{wch:8},{wch:14},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsProd, 'Outros Produtos');
+  
+  // ═══════════════════════════════════════════════════════════
+  // ABA 4: CONTATOS (histórico semanal por estagiário)
+  // ═══════════════════════════════════════════════════════════
+  var headerCont = ['Nome','Funcional','Agência','Meta/dia','Semana','Seg','Ter','Qua','Qui','Sex','Total semana','% da meta'];
+  var rowsCont = [];
+  lista.forEach(function(e){
+    var meta = getMetaContatos(e.id);
+    // Pega todas as semanas que têm registro para este estagiário
+    var semanas = {};
+    (S.producao || []).forEach(function(p){
+      if(p.estagiario_id !== e.id) return;
+      var m = p.tri_ref && p.tri_ref.match(/^CONTATO-(\d{4}-W\d{2})-D\d$/);
+      if(m) semanas[m[1]] = true;
+    });
+    var listaSemanas = Object.keys(semanas).sort();
+    if(listaSemanas.length === 0){
+      // Sem registros; se tem meta, mostra ao menos uma linha
+      if(meta > 0){
+        rowsCont.push([e.nome, (e.perfil&&e.perfil.funcional)||'—', (e.perfil&&e.perfil.agencia)||'—', meta, '(sem registros)', 0,0,0,0,0, 0, '0%']);
+      }
+    } else {
+      listaSemanas.forEach(function(sem){
+        var d0 = getContatoDia(e.id, sem, 0);
+        var d1 = getContatoDia(e.id, sem, 1);
+        var d2 = getContatoDia(e.id, sem, 2);
+        var d3 = getContatoDia(e.id, sem, 3);
+        var d4 = getContatoDia(e.id, sem, 4);
+        var tot = d0+d1+d2+d3+d4;
+        var metaSem = meta * 5;
+        var pctSem = metaSem > 0 ? Math.round(tot/metaSem*100) : 0;
+        rowsCont.push([
+          e.nome, (e.perfil&&e.perfil.funcional)||'—', (e.perfil&&e.perfil.agencia)||'—',
+          meta, labelSemana(sem), d0, d1, d2, d3, d4, tot, pctSem+'%'
+        ]);
+      });
+    }
+  });
+  if(rowsCont.length === 0){
+    rowsCont.push(['Sem dados de contatos','','','','','','','','','','','']);
+  }
+  var wsCont = XLSX.utils.aoa_to_sheet([headerCont].concat(rowsCont));
+  wsCont['!cols'] = [{wch:25},{wch:12},{wch:10},{wch:10},{wch:20},{wch:8},{wch:8},{wch:8},{wch:8},{wch:8},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, wsCont, 'Contatos');
+  
+  // ═══════════════════════════════════════════════════════════
+  // ABA 5: AGENDAMENTOS
+  // ═══════════════════════════════════════════════════════════
+  if(typeof agendamentosCache !== 'undefined' && agendamentosCache.length > 0){
+    var headerAg = ['Data','Título','Tipo','Público-alvo','Descrição','Criado por','Presentes','Ausentes','Total','Arquivo'];
+    var rowsAg = agendamentosCache.map(function(a){
+      var pres = 0, aus = 0;
+      var nomesAusentes = [];
+      if(a.presenca && Array.isArray(a.presenca)){
+        a.presenca.forEach(function(x){
+          if(x.presente) pres++;
+          else {
+            aus++;
+            var est = S.ests.find(function(e){return e.id === x.estagiario_id;});
+            if(est) nomesAusentes.push(est.nome);
+          }
+        });
+      }
+      var faseNomes = {todos:'Todos', fase1:'Fase 1 - Decolar', fase2:'Fase 2 - Evoluir', fase3:'Fase 3 - Impactar'};
+      var tipoNomes = {aula:'Aula', workshop:'Workshop', treinamento:'Treinamento', reuniao:'Reunião', outro:'Outro'};
+      return [
+        formatarDataBR(a.data),
+        a.titulo || '',
+        tipoNomes[a.tipo] || a.tipo || '',
+        faseNomes[a.fase_alvo] || a.fase_alvo || '',
+        a.descricao || '',
+        a.gestor_nome || '—',
+        pres,
+        nomesAusentes.length ? nomesAusentes.join(', ') : (aus > 0 ? aus+' ausente(s)' : '—'),
+        pres+aus,
+        a.arquivo_nome || '—'
+      ];
+    });
+    var wsAg = XLSX.utils.aoa_to_sheet([headerAg].concat(rowsAg));
+    wsAg['!cols'] = [{wch:12},{wch:32},{wch:14},{wch:18},{wch:40},{wch:20},{wch:10},{wch:30},{wch:8},{wch:20}];
+    XLSX.utils.book_append_sheet(wb, wsAg, 'Agendamentos');
+  }
+  
   // Gerar e baixar
-  var nomeArquivo = 'FormaPlus_Resultados_' + new Date().toISOString().slice(0,10) + '.xlsx';
+  var nomeArquivo = 'Nextuber_Resultados_' + new Date().toISOString().slice(0,10) + '.xlsx';
   XLSX.writeFile(wb, nomeArquivo);
   closeExportModal();
 }
