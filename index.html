@@ -503,8 +503,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   /* Avaliação - badge faixa pode quebrar em mobile */
   #pAvaliacao span[style*="border-radius:20px"]{font-size:10px !important;padding:2px 7px !important;}
   
-  /* Feedbacks form - empilhar inputs */
-  #feedbackFormWrap > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
   
   /* Trilhas — botões no header */
   .trilha-tab{font-size:11px;padding:8px 10px;}
@@ -1009,25 +1007,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
       </button>
       <div style="font-size:11.5px;color:var(--ink3);margin-top:7px;" id="atencaoHint">Entre como tutora para alterar.</div>
     </div>
-    <!-- FEEDBACKS -->
-    <div class="psec psec-full">
-      <div class="psec-ttl">Feedbacks</div>
-      <div id="pFeedbacks"></div>
-      <div id="feedbackFormWrap" style="display:none;background:var(--bg);border:1.5px dashed var(--border2);border-radius:var(--r2);padding:14px;margin-top:10px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div class="field-grp"><div class="field-lbl">Data</div><input class="field-in" type="date" id="fbData" style="font-size:13px;"></div>
-          <div class="field-grp"><div class="field-lbl">Frequência</div><select class="field-in" id="fbFreq" style="font-size:13px;"><option value="">—</option><option value="semanal">Semanal</option><option value="quinzenal">Quinzenal</option><option value="mensal">Mensal</option></select></div>
-        </div>
-        <div class="field-grp" style="margin-bottom:8px;"><div class="field-lbl">Evolução</div><select class="field-in" id="fbEvolucao" style="font-size:13px;"><option value="">—</option><option value="melhora">↑ Melhora</option><option value="estavel">→ Estável</option><option value="regressao">↓ Regressão</option></select></div>
-        <div class="field-grp"><div class="field-lbl">Feedback</div><textarea class="obs" id="fbConteudo" placeholder="Descreva o feedback..." style="min-height:80px;"></textarea></div>
-        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
-          <button class="btn-obs" id="btnSalvarFeedback">Salvar</button>
-          <button class="btn-cancel-content" id="btnCancelarFeedback" style="padding:8px 14px;">Cancelar</button>
-          <span class="obs-saved" id="feedbackSaved">✓ Salvo</span>
-        </div>
-      </div>
-      <button class="btn-obs" id="btnAddFeedback" style="display:none;margin-top:10px;">+ Adicionar feedback</button>
-    </div>
 
     <div class="psec psec-full">
       <div class="psec-ttl">Observações</div>
@@ -1446,8 +1425,6 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
   /* Avaliação - badge faixa pode quebrar em mobile */
   #pAvaliacao span[style*="border-radius:20px"]{font-size:10px !important;padding:2px 7px !important;}
   
-  /* Feedbacks form - empilhar inputs */
-  #feedbackFormWrap > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
   
   /* Trilhas — botões no header */
   .trilha-tab{font-size:11px;padding:8px 10px;}
@@ -1475,7 +1452,7 @@ textarea.obs:disabled{opacity:.5;cursor:not-allowed;}
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────────
 var PWD = 'kamilla2025';
-console.log('🔶 NEXTUBER BUILD: 2026-06-17-v22 - filtros ranking');
+console.log('🔶 NEXTUBER BUILD: 2026-06-17-v23 - remove feedback');
 var SUPA_URL = 'https://hbebkripmytkknqydjpt.supabase.co';
 var SUPA_KEY = 'sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH';
 var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -1647,7 +1624,7 @@ async function hashSenha(senha) {
 }
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], feedbacks:[], descricao:[], encontros:[], cfg:{} };
+var S = { ests:[], tl:Array(6).fill(false), gestores:[], producao:[], descricao:[], encontros:[], cfg:{} };
 var DB_LOADED = false;
 
 var TEXTOS_PROJETO_DEFAULT = {
@@ -1726,10 +1703,6 @@ async function loadFromDB(){
     // Load producao trimestral
     var rP = await sb.from('producao_trimestral').select('*');
     if(!rP.error) S.producao = rP.data || [];
-
-    // Load feedbacks
-    var rF = await sb.from('feedbacks').select('*').order('data',{ascending:false});
-    if(!rF.error) S.feedbacks = rF.data || [];
 
     // Load descricao
     var rD = await sb.from('descricao_projeto').select('*').order('ordem');
@@ -1842,27 +1815,6 @@ async function deleteGestor(id){
 }
 
 
-
-async function saveFeedback(estagiarioId, dados){
-  var autorNome = editor ? 'Kamilla' : (gestorLogado ? gestorLogado.nome : '—');
-  var autorTipo = editor ? 'tutora' : 'gestor';
-  var r = await sb.from('feedbacks').insert({
-    estagiario_id: estagiarioId,
-    autor_nome: autorNome,
-    autor_tipo: autorTipo,
-    data: dados.data,
-    conteudo: dados.conteudo,
-    frequencia: dados.frequencia,
-    evolucao: dados.evolucao
-  }).select().single();
-  if(!r.error && r.data){ S.feedbacks.unshift(r.data); }
-  return r;
-}
-
-async function deleteFeedback(id){
-  await sb.from('feedbacks').delete().eq('id', id);
-  S.feedbacks = S.feedbacks.filter(function(f){ return f.id !== id; });
-}
 
 async function saveMetaTri(eid,tri,meta){
   var ex = getProducaoTri(eid,tri);
@@ -2096,50 +2048,6 @@ function statusAtualizacao(e){
   if(diffDias <= 2) return 'alerta'; // faltam 1-2 dias
   return 'ok'; // ainda tem tempo
 }
-
-
-
-function renderFeedbacks(eid){
-  var el = document.getElementById('pFeedbacks');
-  var addBtn = document.getElementById('btnAddFeedback');
-  if(!el) return;
-  var podeAdd = (editor || (modoGestor && gestorLogado));
-  if(addBtn) addBtn.style.display = podeAdd ? 'inline-flex' : 'none';
-  
-  var ECOR = {melhora:'#16A34A',estavel:'#EC7000',regressao:'#DC2626'};
-  var EBG  = {melhora:'#DCFCE7',estavel:'#FFF3E8',regressao:'#FEE2E2'};
-  var ELBL = {melhora:'↑ Melhora',estavel:'→ Estável',regressao:'↓ Regressão'};
-  
-  var lista = (S.feedbacks||[]).filter(function(f){ return f.estagiario_id === eid; });
-  if(!lista.length){
-    el.innerHTML = '<div style="font-size:12.5px;color:var(--ink3);font-style:italic;padding:4px 0;">Nenhum feedback ainda.</div>';
-    return;
-  }
-  el.innerHTML = lista.map(function(f){
-    var cor = ECOR[f.evolucao]||'var(--ink3)';
-    var bg = EBG[f.evolucao]||'var(--bg)';
-    var lbl = ELBL[f.evolucao]||'';
-    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:8px;">'
-      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;">'
-        +'<span style="font-size:11px;color:var(--ink3);">'+fmtDate(f.data)+'</span>'
-        +'<span style="font-size:11px;font-weight:500;color:var(--ink2);">'+f.autor_nome+'</span>'
-        +(f.autor_tipo==='gestor'?'<span style="font-size:10px;background:var(--bg);color:var(--ink3);padding:1px 6px;border-radius:20px;border:1px solid var(--border);">Gestor</span>':'')
-        +(f.evolucao?'<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:'+bg+';color:'+cor+';">'+lbl+'</span>':'')
-        +(editor?'<button style="margin-left:auto;background:none;border:none;font-size:14px;color:var(--ink3);cursor:pointer;" data-delfb="'+f.id+'">✕</button>':'')
-      +'</div>'
-      +(f.frequencia?'<div style="font-size:11px;color:var(--ink3);margin-bottom:5px;">Frequência: '+f.frequencia+'</div>':'')
-      +'<div style="font-size:13px;color:var(--ink2);line-height:1.65;">'+f.conteudo+'</div>'
-    +'</div>';
-  }).join('');
-  el.querySelectorAll('[data-delfb]').forEach(function(btn){
-    btn.addEventListener('click', async function(){
-      if(!confirm('Excluir este feedback?')) return;
-      await deleteFeedback(this.dataset.delfb);
-      renderFeedbacks(eid);
-    });
-  });
-}
-
 
 
 
@@ -3813,7 +3721,6 @@ function openPanel(idx){
   updateAtencaoBtn(idx);
   renderAvaliacao(idx);
   renderResultados(idx);
-  renderFeedbacks(S.ests[idx].id);
   // Avaliação handled by renderAvaliacao + renderResultados
   document.getElementById('obsTA').value=e.obs||'';
   document.getElementById('obsTA').disabled=!editor;
@@ -4363,7 +4270,6 @@ function applyMode(){
     updateAtencaoBtn(_pIdx);
     renderAvaliacao(_pIdx);
     renderResultados(_pIdx);
-    renderFeedbacks(S.ests[_pIdx].id);
   }
   
   renderRanking();
@@ -4828,38 +4734,6 @@ document.getElementById('btnObs').addEventListener('click', function(){
     S.ests[_pIdx].obs=document.getElementById('obsTA').value;
     saveEstagiario(S.ests[_pIdx]); persist(true);
     var b=document.getElementById('obsSaved'); b.classList.add('show'); setTimeout(function(){b.classList.remove('show');},2000);
-  });
-
-  // Feedbacks
-  document.getElementById('btnAddFeedback').addEventListener('click', function(){
-    document.getElementById('feedbackFormWrap').style.display = 'block';
-    this.style.display = 'none';
-    document.getElementById('fbData').value = new Date().toISOString().split('T')[0];
-  });
-  document.getElementById('btnCancelarFeedback').addEventListener('click', function(){
-    document.getElementById('feedbackFormWrap').style.display = 'none';
-    document.getElementById('btnAddFeedback').style.display = 'inline-flex';
-    ['fbConteudo','fbFreq','fbEvolucao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  });
-  document.getElementById('btnSalvarFeedback').addEventListener('click', async function(){
-    var _pIdx = getPanelEstIdx();
-    if(_pIdx<0) return;
-    var conteudo = document.getElementById('fbConteudo').value.trim();
-    if(!conteudo){ document.getElementById('fbConteudo').focus(); return; }
-    var dados = {
-      data: document.getElementById('fbData').value || new Date().toISOString().split('T')[0],
-      conteudo: conteudo,
-      frequencia: document.getElementById('fbFreq').value,
-      evolucao: document.getElementById('fbEvolucao').value
-    };
-    var r = await saveFeedback(S.ests[_pIdx].id, dados);
-    if(r && r.error){ alert('Erro ao salvar feedback: ' + (r.error.message||JSON.stringify(r.error))); return; }
-    renderFeedbacks(panelIdx);
-    document.getElementById('feedbackFormWrap').style.display = 'none';
-    document.getElementById('btnAddFeedback').style.display = 'inline-flex';
-    ['fbConteudo','fbFreq','fbEvolucao'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-    var sv = document.getElementById('feedbackSaved');
-    if(sv){ sv.classList.add('show'); setTimeout(function(){ sv.classList.remove('show'); }, 2000); }
   });
 
 
