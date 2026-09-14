@@ -77,9 +77,29 @@ export async function requireTutorOrGga(
   return manager;
 }
 
+/** GAs podem incluir estagiários, sempre dentro da própria regional. */
+export async function requireTutorOrStudentRegistrar(
+  supabase: SupabaseClient,
+  session: SessionPayload,
+) {
+  if (session.role === "tutora") return null;
+  const manager = await loadSessionManager(supabase, session);
+  if (!isStudentRegistrar(manager.tipo_gestor)) {
+    throw new ProductionHttpError(
+      "Apenas a tutora, GGA, facilitador ou GA pode cadastrar estagiarios.",
+      403,
+    );
+  }
+  return manager;
+}
+
 /** Facilitadores possuem o mesmo alcance operacional do GGA. */
 export function isGgaEquivalent(managerType: string | null | undefined) {
   return managerType === "gga" || managerType === "facilitador";
+}
+
+export function isStudentRegistrar(managerType: string | null | undefined) {
+  return isGgaEquivalent(managerType) || managerType === "ga";
 }
 
 export function assertSameOrigin(request: Request) {

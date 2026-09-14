@@ -2,11 +2,10 @@ import { parseStudentMutation } from "@/domain/admin-mutations";
 import { createSupabaseAdminClient } from "@/lib/supabase-server";
 import {
   assertSameOrigin,
-  loadSessionManager,
   ProductionHttpError,
   productionErrorResponse,
   requireProductionSession,
-  requireTutorOrGga,
+  requireTutorOrStudentRegistrar,
 } from "@/server/production-access";
 import type { Json } from "@/types/database";
 
@@ -16,7 +15,7 @@ export async function POST(request: Request) {
     const session = await requireProductionSession();
     const input = parseStudentMutation(await request.json().catch(() => null));
     const supabase = createSupabaseAdminClient();
-    await requireTutorOrGga(supabase, session);
+    const manager = await requireTutorOrStudentRegistrar(supabase, session);
 
     const employeeCode = String((input.profile as Record<string, Json>).funcional ?? "");
     const { data: duplicate, error: duplicateError } = await supabase
@@ -29,14 +28,21 @@ export async function POST(request: Request) {
     if (duplicate) throw new ProductionHttpError("Ja existe um estagiario com este funcional.", 409);
 
     let defaultRegionalId: string | null = null;
+    let profile = input.profile;
     if (session.role === "gestor") {
-      const manager = await loadSessionManager(supabase, session);
+      if (!manager) throw new ProductionHttpError("Gestor nao encontrado.", 403);
       defaultRegionalId = manager.regional_id ?? null;
       if (!defaultRegionalId) {
         throw new ProductionHttpError("Gestor sem regional vinculada.", 403);
       }
       if (input.regionalId && input.regionalId !== defaultRegionalId) {
         throw new ProductionHttpError("Gestores só podem cadastrar estagiários na própria regional.", 403);
+      }
+      if (manager.tipo_gestor === "ga") {
+        profile = {
+          ...(input.profile as Record<string, Json>),
+          ga_funcional: manager.funcional,
+        } as Json;
       }
     }
 
@@ -47,7 +53,7 @@ export async function POST(request: Request) {
         meses: input.months,
         obs: input.notes,
         atencao: input.attention,
-        perfil: input.profile,
+        perfil: profile,
         trilha_checks: input.trailChecks,
         regional_id: defaultRegionalId || input.regionalId,
       })

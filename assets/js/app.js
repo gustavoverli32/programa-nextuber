@@ -810,6 +810,12 @@ function isGGA(){
   if(!modoGestor || !gestorLogado) return false;
   return gestorLogado.tipo_gestor === 'gga' || gestorLogado.tipo_gestor === 'facilitador';
 }
+function canRegisterStudents(){
+  if(editor) return true;
+  if(!modoGestor || !gestorLogado) return false;
+  var tipo = String(gestorLogado.tipo_gestor || '').toLowerCase();
+  return tipo === 'ga' || tipo === 'gga' || tipo === 'facilitador';
+}
 function isGerenteRegional(){
   if(!modoGestor || !gestorLogado) return false;
   return gestorLogado.tipo_gestor === 'lider_regional';
@@ -3195,6 +3201,7 @@ function renderCadChips(){
 function renderCadList(){
   var estsAtivos = (typeof getEstagiariosAtivos === 'function') ? getEstagiariosAtivos() : S.ests;
   var ests = estsAtivos.filter(function(e){ return e.perfil && e.perfil.funcional; });
+  var canManageCadastros = editor || isGGA();
   document.getElementById('cadListCount').textContent = ests.length;
   if(ests.length===0){
     document.getElementById('cadList').innerHTML='<div class="cad-list-empty">Nenhum estagiário cadastrado ainda.</div>';
@@ -3213,10 +3220,10 @@ function renderCadList(){
           +(tempo?'<span>'+tempo+'</span>':'')
         +'</div>'
       +'</div>'
-      +'<div style="display:flex;gap:6px;">'
-      +'<button class="cad-list-btn" data-idx="'+realIdx+'">Editar</button>'
-      +'<button class="cad-list-btn cad-del-btn" data-delidx="'+realIdx+'" style="color:#DC2626;border-color:#FECACA;">Excluir</button>'
-      +'</div>'
+      +(canManageCadastros ? '<div style="display:flex;gap:6px;">'
+        +'<button class="cad-list-btn" data-idx="'+realIdx+'">Editar</button>'
+        +'<button class="cad-list-btn cad-del-btn" data-delidx="'+realIdx+'" style="color:#DC2626;border-color:#FECACA;">Excluir</button>'
+        +'</div>' : '')
       +'</div>';
   }).join('');
   document.getElementById('cadList').querySelectorAll('.cad-list-btn:not(.cad-del-btn)').forEach(function(btn){
@@ -3305,7 +3312,8 @@ function updateCadPreview(){
   }
 }
 async function savePerfil(){
-  if(!editor && !isGGA()){ return; }
+  if(!canRegisterStudents()){ return; }
+  if(cadIdx >= 0 && !editor && !isGGA()){ return; }
   var nome = document.getElementById('cadNome').value.trim();
   if(!nome){ document.getElementById('cadNome').focus(); return; }
   var func = document.getElementById('cadFunc').value.replace(/[^0-9]/g,'').slice(0,9);
@@ -3421,12 +3429,12 @@ function goPage(id){
   // Bloqueio de acesso por permissão
   // Cadastro e descricao são SÓ TUTORA — gestor nunca acessa
   var paginasSoTutora = ['configuracoes'];
-  var paginasTutoraOuGGA = ['cadastro'];
+  var paginasCadastro = ['cadastro'];
   if(paginasSoTutora.indexOf(id) >= 0 && !editor){
     var managerPermissions = (gestorLogado && gestorLogado.permissoes) || {};
     if(!modoGestor || managerPermissions.configuracoes !== true) id = 'overview';
   }
-  if(paginasTutoraOuGGA.indexOf(id) >= 0 && !editor && !(modoGestor && isGGA())){
+  if(paginasCadastro.indexOf(id) >= 0 && !canRegisterStudents()){
     id = 'overview';
   }
   // Trilhas/conteúdos: tutora sempre, gestor se tiver permissão, visitante não
@@ -3496,11 +3504,22 @@ async function doLogin(){
   }
 }
 function setCadInputState(){
-  var dis=!editor && !isGGA();
+  var dis=!canRegisterStudents();
   ['cadNome','cadFunc','cadAgencia','cadInicio','cadGAFunc','cadGGAFunc','cadCertificacao','cadAnivDia','cadAnivMes'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.disabled=dis;
   });
   var btn=document.getElementById('cadAddBtn'); if(btn) btn.disabled=dis;
+  var regional=document.getElementById('cadRegional');
+  var isGA = !editor && modoGestor && gestorLogado && gestorLogado.tipo_gestor === 'ga';
+  if(regional){
+    if(isGA && gestorLogado.regional_id) regional.value=String(gestorLogado.regional_id);
+    regional.disabled=dis || isGA;
+  }
+  var gaInput=document.getElementById('cadGAFunc');
+  if(gaInput && isGA){
+    gaInput.value=String(gestorLogado.funcional || '');
+    gaInput.disabled=true;
+  }
 }
 
 function applyModoGestor(){
@@ -3534,6 +3553,10 @@ function applyModoGestor(){
   if(isGGA()){
     document.querySelectorAll('[data-page="cadastro"]').forEach(function(el){ el.style.display=''; });
     document.querySelectorAll('[data-page="trilhas"]').forEach(function(el){ el.style.display=''; });
+  }
+  // GA: pode cadastrar somente na própria regional.
+  if(canRegisterStudents()){
+    document.querySelectorAll('[data-page="cadastro"]').forEach(function(el){ el.style.display=''; });
   }
   // Esconder botão "Editar banner"
   var btnEditBanner = document.getElementById('btnEditarBanner');
