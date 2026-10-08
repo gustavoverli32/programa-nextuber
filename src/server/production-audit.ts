@@ -13,12 +13,11 @@ import type { Json } from "@/types/database";
 
 type AdminClient = ReturnType<typeof createSupabaseAdminClient>;
 
-export async function ensureLatestProductionAudit(
+export async function ensureProductionAuditForDeadline(
   supabase: AdminClient,
-  config: ProductionConfig,
-  now = new Date(),
+  deadline: string,
+  capturedAt = new Date().toISOString(),
 ) {
-  const deadline = getMostRecentlyClosedDeadline(config, now);
   const { data: historyRow, error: historyError } = await supabase
     .from("configuracoes")
     .select("valor")
@@ -45,7 +44,7 @@ export async function ensureLatestProductionAudit(
   const entry = buildProductionAuditEntry(
     students ?? [],
     deadline,
-    new Date().toISOString(),
+    capturedAt,
     managers ?? [],
   );
   const nextHistory = mergeProductionAuditEntry(history, entry);
@@ -55,4 +54,16 @@ export async function ensureLatestProductionAudit(
   });
   if (saveError) throw saveError;
   return nextHistory;
+}
+
+export async function ensureLatestProductionAudit(
+  supabase: AdminClient,
+  config: ProductionConfig,
+  now = new Date(),
+) {
+  return ensureProductionAuditForDeadline(
+    supabase,
+    getMostRecentlyClosedDeadline(config, now),
+    now.toISOString(),
+  );
 }

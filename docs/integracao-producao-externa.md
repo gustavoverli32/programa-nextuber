@@ -1,8 +1,8 @@
-# Integração Planner e Tuber — etapa de preparação
+# Integração Planner e Tuber
 
 O Nextuber está preparado para receber, de forma privada, a produção diária enviada pela **Planner e Tuber**. O vínculo é sempre feito pelo **funcional de nove dígitos** do estagiário. O nome é recebido apenas para conferência e não é usado para localizar o cadastro.
 
-Nesta etapa, o Nextuber armazena com segurança os recebimentos diários e não altera a tabela semanal que os gestores preenchem manualmente. A leitura no perfil e a consolidação automática para a semana serão ativadas somente após a validação da parceria.
+O Nextuber recebe e armazena os resultados diariamente, mas **não atualiza a tabela semanal todos os dias**. No fechamento de sexta-feira, às 23h50 no horário de São Paulo, ele soma os lançamentos de segunda a sexta e grava uma única vez os totais nas células semanais existentes. A digitação manual continua ativa somente como plano B para exceções.
 
 ## Endereço de recebimento
 
@@ -52,6 +52,8 @@ Cada lote possui um identificador único (`eventId`). Caso o mesmo lote seja ree
 
 `referenceDate` é recomendada. Quando ausente, será usada a data de `sentAt`. Os números devem ser enviados como números, sem `R$` e sem separador de milhar.
 
+Para reenviar ou corrigir o mesmo fechamento diário, a Planner e Tuber deve manter o mesmo `eventId`. Um novo `eventId` representa um novo recebimento diário.
+
 ## Produtos reconhecidos
 
 O Nextuber identifica os produtos já existentes na plataforma: INSS, OP, EP, Creditário, Seguros, PIC, Combinaqui, Engajamento e Consórcio. Variações como “Crédito consignado INSS” e “Seguro” são automaticamente associadas a INSS e Seguros.
@@ -62,6 +64,7 @@ O Nextuber identifica os produtos já existentes na plataforma: INSS, OP, EP, Cr
 - Lotes com funcional inexistente ou estagiário arquivado são rejeitados por inteiro.
 - Produtos fora do catálogo do Nextuber são rejeitados; nada é gravado parcialmente.
 - Os dados diários são armazenados em tabela própria, sem acesso direto pelo navegador.
+- No fechamento semanal, somente os produtos efetivamente recebidos da Planner e Tuber substituem a célula correspondente; lançamentos manuais de produtos sem retorno automático são preservados.
 - A chave pode ser trocada imediatamente se necessário.
 
 ## Respostas
