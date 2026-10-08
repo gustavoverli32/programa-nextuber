@@ -345,6 +345,53 @@ export type Database = {
           },
         ]
       }
+      planner_tuber_producao_diaria: {
+        Row: {
+          atualizado_em: string
+          data_referencia: string
+          estagiario_id: string
+          evento_id: string
+          id: string
+          nome_origem: string | null
+          produto: string
+          produto_origem: string
+          quantidade: number
+          recebido_em: string
+        }
+        Insert: {
+          atualizado_em?: string
+          data_referencia: string
+          estagiario_id: string
+          evento_id: string
+          id?: string
+          nome_origem?: string | null
+          produto: string
+          produto_origem: string
+          quantidade: number
+          recebido_em?: string
+        }
+        Update: {
+          atualizado_em?: string
+          data_referencia?: string
+          estagiario_id?: string
+          evento_id?: string
+          id?: string
+          nome_origem?: string | null
+          produto?: string
+          produto_origem?: string
+          quantidade?: number
+          recebido_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_tuber_producao_diaria_estagiario_id_fkey"
+            columns: ["estagiario_id"]
+            isOneToOne: false
+            referencedRelation: "estagiarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       "Projetos Estagiários Itaú": {
         Row: {
           categoria: string | null

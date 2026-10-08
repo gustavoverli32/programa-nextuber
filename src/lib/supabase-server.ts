@@ -6,6 +6,10 @@ import type { Database } from "@/types/database";
 const DEFAULT_SUPABASE_URL = "https://hbebkripmytkknqydjpt.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_PjzxYcSPxCwSjeGB-Jzk3g_1632xWIH";
 
+export function hasSupabaseServiceRoleKey() {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function createSupabaseAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const key =

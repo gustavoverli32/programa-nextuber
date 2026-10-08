@@ -17,8 +17,8 @@ test("formats long date and quarter name correctly", () => {
 
 test("calculates consolidated KPIs and phase distribution", () => {
   const students: StudentItem[] = [
-    { id: "1", nome: "Ana", atencao: true, perfil: { inicio: "2026-07-01" } },
-    { id: "2", nome: "Bruno", atencao: false, perfil: { inicio: "2026-01-01" } },
+    { id: "1", nome: "Ana", atencao: true, perfil: { inicio: "2026-07-01", trilha_manual: "iniciante" } },
+    { id: "2", nome: "Bruno", atencao: false, perfil: { inicio: "2026-01-01", trilha_manual: "avancado" } },
   ];
   const rows: ProductionRow[] = [
     { estagiario_id: "1", tri_ref: "2026-Q3", meta: 0, producao: 0, ref_item: "cred_INSS", valor: 5000 },
